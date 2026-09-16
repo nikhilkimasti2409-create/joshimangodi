@@ -104,15 +104,22 @@ export interface DalLot {
   initialWeightKg: number;
   availableWeightKg: number;
   ratePerKgInr: number;
+  dalType?: string;
+  notes?: string;
 }
 
 export interface Worker {
   id: string;
   name: string;
   phone: string;
+  role?: string; // e.g. "Mangodi Belan / Extrusion", "Dal Soaking & Grinding", "Sun-Drying & Quality Sorting", "Packaging & Sealing", "Master Supervisor"
   pieceRatePerKgInr: number; // e.g. ₹25/kg
+  dailyWageInr?: number;
   totalKgProduced: number;
   totalEarnedInr: number;
+  status?: 'ACTIVE' | 'INACTIVE';
+  joinedDate?: string;
+  notes?: string;
 }
 
 export interface WorkerLaborEntry {
@@ -172,8 +179,8 @@ export interface RawMaterial {
   code: string;
   name: string;
   nameHindi: string;
-  category: 'DAL' | 'MASALA' | 'PACKAGING' | 'LABEL';
-  unit: 'KG' | 'PCS' | 'BOX';
+  category: 'DAL' | 'MASALA' | 'PACKAGING' | 'LABEL' | 'OTHER';
+  unit: 'KG' | 'PCS' | 'BOX' | 'BAG' | 'GM';
   currentStock: number;
   reorderPoint: number;
   costPerUnitInr: number;

@@ -17,6 +17,7 @@ import type {
   InboundShipment,
   SalesChannel,
   CashDenominations,
+  BatchStatus,
 } from '../types';
 
 import {
@@ -41,7 +42,7 @@ import {
 import historicalOrdersData from './historicalOrders.json';
 import realCustomersData from './realCustomers.json';
 
-const STORAGE_KEY = 'joshi_mangodi_ops_state_v5';
+const STORAGE_KEY = 'joshi_mangodi_ops_state_v6';
 
 // Real product catalog matching Joshi Mangodi fixed sales sheet (₹200/kg retail rate, ₹170/kg wholesale rate)
 export const INITIAL_PRODUCTS: ProductSKU[] = [
@@ -299,214 +300,12 @@ export const PRESET_SAMPLE_PRODUCTS: ProductSKU[] = [...INITIAL_PRODUCTS];
 // Authentic CRM Customers from real sales sheet & Contacts.vcf
 export const INITIAL_CUSTOMERS: Customer[] = realCustomersData as Customer[];
 
-// Seed Raw Materials
-export const INITIAL_RAW_MATERIALS: RawMaterial[] = [
-  {
-    id: 'raw-dal-01',
-    code: 'RM-DAL-MOGAR',
-    name: 'Moong Mogar Dal (Grade A)',
-    nameHindi: 'मूंग मोगर दाल (ग्रेड A)',
-    category: 'DAL',
-    unit: 'KG',
-    currentStock: 680,
-    reorderPoint: 250,
-    costPerUnitInr: 92,
-    supplierName: 'Nagaur Mandi Traders',
-    lastRestockedDate: '2026-09-10',
-  },
-  {
-    id: 'raw-hing-01',
-    code: 'RM-SPICE-HING',
-    name: 'Asafoetida / Pure Hing',
-    nameHindi: 'शुद्ध हींग (Hing)',
-    category: 'MASALA',
-    unit: 'KG',
-    currentStock: 12.5,
-    reorderPoint: 4,
-    costPerUnitInr: 1800,
-    supplierName: 'Hathras Hing Company',
-    lastRestockedDate: '2026-08-20',
-  },
-  {
-    id: 'raw-chili-01',
-    code: 'RM-SPICE-CHILI',
-    name: 'Mathania Red Chili Flakes',
-    nameHindi: 'मथानिया लाल मिर्च कुटी',
-    category: 'MASALA',
-    unit: 'KG',
-    currentStock: 34,
-    reorderPoint: 15,
-    costPerUnitInr: 260,
-    supplierName: 'Jodhpur Spices Depot',
-    lastRestockedDate: '2026-09-01',
-  },
-  {
-    id: 'raw-pouch-500',
-    code: 'RM-PKG-P500',
-    name: 'Printed Zip Pouch 500g (Food Grade)',
-    nameHindi: 'प्रिंटेड पाउच 500 ग्राम',
-    category: 'PACKAGING',
-    unit: 'PCS',
-    currentStock: 1850,
-    reorderPoint: 500,
-    costPerUnitInr: 3.8,
-    supplierName: 'Jaipur Polymers & Pack',
-    lastRestockedDate: '2026-09-05',
-  },
-  {
-    id: 'raw-pouch-1000',
-    code: 'RM-PKG-P1000',
-    name: 'Printed Zip Pouch 1kg (Food Grade)',
-    nameHindi: 'प्रिंटेड पाउच 1 किग्रा',
-    category: 'PACKAGING',
-    unit: 'PCS',
-    currentStock: 1100,
-    reorderPoint: 300,
-    costPerUnitInr: 5.2,
-    supplierName: 'Jaipur Polymers & Pack',
-    lastRestockedDate: '2026-09-05',
-  },
-  {
-    id: 'raw-box-carton',
-    code: 'RM-PKG-BOX20',
-    name: 'Outer Corrugated Carton Box (20kg)',
-    nameHindi: 'मास्टर कार्टन बॉक्स (20 किग्रा)',
-    category: 'PACKAGING',
-    unit: 'BOX',
-    currentStock: 120,
-    reorderPoint: 30,
-    costPerUnitInr: 28,
-    supplierName: 'Sikar Packaging Mills',
-    lastRestockedDate: '2026-08-25',
-  },
-];
-
-// Seed Dal Lots
-export const INITIAL_DAL_LOTS: DalLot[] = [
-  {
-    id: 'dl-2026-089',
-    lotNo: 'DL-2026-089',
-    supplierName: 'Nagaur Mandi Traders',
-    purchaseDate: '2026-09-10',
-    initialWeightKg: 500,
-    availableWeightKg: 320,
-    ratePerKgInr: 92,
-  },
-  {
-    id: 'dl-2026-081',
-    lotNo: 'DL-2026-081',
-    supplierName: 'Bikaner Grain Supply',
-    purchaseDate: '2026-08-28',
-    initialWeightKg: 400,
-    availableWeightKg: 95,
-    ratePerKgInr: 90,
-  },
-];
-
-// Seed Workers / Kaarigar
-export const INITIAL_WORKERS: Worker[] = [
-  {
-    id: 'wrk-01',
-    name: 'Sunita Devi',
-    phone: '9829112233',
-    pieceRatePerKgInr: 25,
-    totalKgProduced: 340,
-    totalEarnedInr: 8500,
-  },
-  {
-    id: 'wrk-02',
-    name: 'Kamla Bai',
-    phone: '9784223344',
-    pieceRatePerKgInr: 25,
-    totalKgProduced: 295,
-    totalEarnedInr: 7375,
-  },
-  {
-    id: 'wrk-03',
-    name: 'Anjali Bai',
-    phone: '9414334455',
-    pieceRatePerKgInr: 25,
-    totalKgProduced: 240,
-    totalEarnedInr: 6000,
-  },
-  {
-    id: 'wrk-04',
-    name: 'Ramesh Sharma (Master)',
-    phone: '9602445566',
-    pieceRatePerKgInr: 30,
-    totalKgProduced: 410,
-    totalEarnedInr: 12300,
-  },
-];
-
-// Seed Production Batches
-export const INITIAL_BATCHES: ProductionBatch[] = [
-  {
-    id: 'batch-20260912-01',
-    batchCode: 'B-2026-09-12-01',
-    productType: 'Lambi Plain Moong Mangodi',
-    shape: 'LAMBI',
-    dalLotId: 'dl-2026-081',
-    dalLotNo: 'DL-2026-081',
-    rawDalWeightKg: 100,
-    wetMixtureWeightKg: 218,
-    moistureRatio: 2.18,
-    driedYieldKg: 96.5,
-    shrinkagePct: 55.73,
-    expectedYieldBaselinePct: 96.0,
-    yieldVariancePct: 0.5,
-    labourEntries: [
-      { workerId: 'wrk-01', workerName: 'Sunita Devi', driedKg: 50, ratePerKgInr: 25, payoutInr: 1250 },
-      { workerId: 'wrk-02', workerName: 'Kamla Bai', driedKg: 46.5, ratePerKgInr: 25, payoutInr: 1162.5 },
-    ],
-    totalLaborCostInr: 2412.5,
-    dalCostInr: 9000,
-    masalaCostInr: 500,
-    grindingCostInr: 600,
-    totalBatchCostInr: 12512.5,
-    costPerKgInr: 129.66,
-    qcChecks: {
-      moisturePassed: true,
-      colorPassed: true,
-      tastePassed: true,
-      breakagePct: 2.2,
-      qcNotes: 'Golden yellow crisp color, ideal sun drying in 32°C weather.',
-    },
-    status: 'RELEASED',
-    releaseDate: '2026-09-14',
-    expiryDate: '2027-03-13',
-    outputLots: [
-      { skuId: 'sku-plain-lambi-500', skuName: 'Lambi Plain 500g', packetSizeGrams: 500, packagesCount: 113, lotNumber: 'LOT-L500-0914' },
-      { skuId: 'sku-plain-lambi-1000', skuName: 'Lambi Plain 1kg', packetSizeGrams: 1000, packagesCount: 40, lotNumber: 'LOT-L1000-0914' },
-    ],
-    createdAt: '2026-09-12T08:00:00.000Z',
-  },
-];
-
-// Seed Expenses
-export const INITIAL_EXPENSES: Expense[] = [
-  {
-    id: 'exp-01',
-    date: '2026-09-16',
-    category: 'PISAI',
-    note: 'Dal grinding (Pisai) 120kg at mill',
-    vendor: 'Kanhaiya Flour & Dal Mill',
-    paymentMethod: 'Cash',
-    amountInr: 720,
-    createdAt: '2026-09-16T09:15:00.000Z',
-  },
-  {
-    id: 'exp-02',
-    date: '2026-09-15',
-    category: 'TRANSPORT',
-    note: 'Tempo freight delivery to Sikar Mandi wholesale shops',
-    vendor: 'Rajasthan Roadways Local Tempo',
-    paymentMethod: 'UPI',
-    amountInr: 650,
-    createdAt: '2026-09-15T14:20:00.000Z',
-  },
-];
-
+// Initial Empty States for Production, Workers, Batches, Lots & Materials (100% Manual Management)
+export const INITIAL_RAW_MATERIALS: RawMaterial[] = [];
+export const INITIAL_DAL_LOTS: DalLot[] = [];
+export const INITIAL_WORKERS: Worker[] = [];
+export const INITIAL_BATCHES: ProductionBatch[] = [];
+export const INITIAL_EXPENSES: Expense[] = [];
 export const INITIAL_DISPATCHES: DispatchTicket[] = [];
 export const INITIAL_INBOUND: InboundShipment[] = [];
 export const INITIAL_STOCK_MOVEMENTS: StockMovement[] = [];
@@ -538,7 +337,7 @@ function loadState(): AppState {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        products: parsed.products || [],
+        products: parsed.products || INITIAL_PRODUCTS,
         customers: parsed.customers || INITIAL_CUSTOMERS,
         customerPayments: parsed.customerPayments || INITIAL_PAYMENTS,
         orders: parsed.orders || (historicalOrdersData as Order[]),
@@ -562,7 +361,7 @@ function loadState(): AppState {
   }
 
   return {
-    products: [],
+    products: INITIAL_PRODUCTS,
     customers: INITIAL_CUSTOMERS,
     customerPayments: INITIAL_PAYMENTS,
     orders: historicalOrdersData as Order[],
@@ -1151,6 +950,201 @@ export const store = {
     return newBatch;
   },
 
+  // Worker / Kaarigar Management CRUD
+  addWorker: (workerData: {
+    name: string;
+    phone?: string;
+    role?: string;
+    pieceRatePerKgInr?: number;
+    dailyWageInr?: number;
+    notes?: string;
+  }) => {
+    const newWorker: Worker = {
+      id: `wrk-${Date.now()}`,
+      name: workerData.name.trim(),
+      phone: workerData.phone?.trim() || '',
+      role: workerData.role || 'Mangodi Belan & Extrusion',
+      pieceRatePerKgInr: Number(workerData.pieceRatePerKgInr) || 25,
+      dailyWageInr: Number(workerData.dailyWageInr) || 0,
+      totalKgProduced: 0,
+      totalEarnedInr: 0,
+      status: 'ACTIVE',
+      joinedDate: new Date().toISOString().split('T')[0],
+      notes: workerData.notes,
+    };
+    globalState.workers.push(newWorker);
+    emitChange();
+    return newWorker;
+  },
+
+  updateWorker: (workerId: string, fields: Partial<Worker>) => {
+    const idx = globalState.workers.findIndex((w) => w.id === workerId);
+    if (idx >= 0) {
+      globalState.workers[idx] = { ...globalState.workers[idx], ...fields };
+      emitChange();
+    }
+  },
+
+  deleteWorker: (workerId: string) => {
+    globalState.workers = globalState.workers.filter((w) => w.id !== workerId);
+    emitChange();
+  },
+
+  recordWorkerPayout: (payout: {
+    workerId: string;
+    amountInr: number;
+    kgProduced?: number;
+    notes?: string;
+    paymentMethod?: 'Cash' | 'UPI';
+  }) => {
+    const wrk = globalState.workers.find((w) => w.id === payout.workerId);
+    if (wrk) {
+      if (payout.kgProduced) {
+        wrk.totalKgProduced = round2(wrk.totalKgProduced + payout.kgProduced);
+      }
+      wrk.totalEarnedInr = round2(wrk.totalEarnedInr + payout.amountInr);
+      store.logExpense({
+        date: new Date().toISOString().split('T')[0],
+        category: 'LABOR',
+        note: `Wage / Piece-rate payout to ${wrk.name}${payout.notes ? ` (${payout.notes})` : ''}`,
+        vendor: wrk.name,
+        paymentMethod: payout.paymentMethod || 'Cash',
+        amountInr: payout.amountInr,
+      });
+    }
+    emitChange();
+  },
+
+  // Dal Lots CRUD
+  addDalLot: (lotData: {
+    lotNo: string;
+    supplierName: string;
+    dalType?: string;
+    initialWeightKg: number;
+    ratePerKgInr: number;
+    purchaseDate?: string;
+    notes?: string;
+  }) => {
+    const newLot: DalLot = {
+      id: `dl-${Date.now()}`,
+      lotNo: lotData.lotNo.trim() || `DL-${Date.now().toString().slice(-4)}`,
+      supplierName: lotData.supplierName.trim() || 'Mandi Supplier',
+      dalType: lotData.dalType || 'Moong Mogar Dal (Grade A)',
+      purchaseDate: lotData.purchaseDate || new Date().toISOString().split('T')[0],
+      initialWeightKg: Number(lotData.initialWeightKg) || 0,
+      availableWeightKg: Number(lotData.initialWeightKg) || 0,
+      ratePerKgInr: Number(lotData.ratePerKgInr) || 90,
+      notes: lotData.notes,
+    };
+    globalState.dalLots.unshift(newLot);
+
+    // Sync Raw Material stock if matching DAL category exists
+    const existingDalRM = globalState.rawMaterials.find((r) => r.category === 'DAL');
+    if (existingDalRM) {
+      existingDalRM.currentStock = round2(existingDalRM.currentStock + newLot.initialWeightKg);
+    }
+    emitChange();
+    return newLot;
+  },
+
+  updateDalLot: (lotId: string, fields: Partial<DalLot>) => {
+    const idx = globalState.dalLots.findIndex((l) => l.id === lotId);
+    if (idx >= 0) {
+      globalState.dalLots[idx] = { ...globalState.dalLots[idx], ...fields };
+      emitChange();
+    }
+  },
+
+  deleteDalLot: (lotId: string) => {
+    globalState.dalLots = globalState.dalLots.filter((l) => l.id !== lotId);
+    emitChange();
+  },
+
+  // Raw Materials CRUD
+  addRawMaterial: (rmData: {
+    name: string;
+    nameHindi?: string;
+    code?: string;
+    category: 'DAL' | 'MASALA' | 'PACKAGING' | 'LABEL' | 'OTHER';
+    unit: 'KG' | 'PCS' | 'BOX' | 'BAG' | 'GM';
+    currentStock: number;
+    reorderPoint: number;
+    costPerUnitInr: number;
+    supplierName?: string;
+  }) => {
+    const code = rmData.code?.trim() || `RM-${rmData.category.slice(0, 3)}-${Date.now().toString().slice(-4)}`;
+    const newRM: RawMaterial = {
+      id: `rm-${Date.now()}`,
+      code,
+      name: rmData.name.trim(),
+      nameHindi: rmData.nameHindi?.trim() || rmData.name.trim(),
+      category: rmData.category,
+      unit: rmData.unit,
+      currentStock: Number(rmData.currentStock) || 0,
+      reorderPoint: Number(rmData.reorderPoint) || 0,
+      costPerUnitInr: Number(rmData.costPerUnitInr) || 0,
+      supplierName: rmData.supplierName?.trim() || '',
+      lastRestockedDate: new Date().toISOString().split('T')[0],
+    };
+    globalState.rawMaterials.unshift(newRM);
+
+    if (newRM.currentStock > 0) {
+      globalState.stockMovements.unshift({
+        id: `sm-rm-init-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        itemId: newRM.id,
+        itemName: newRM.name,
+        itemType: 'RAW_MATERIAL',
+        movementType: 'PROCUREMENT',
+        qtySigned: newRM.currentStock,
+        unit: newRM.unit,
+        reason: 'Initial raw material stock',
+        operator: 'Admin',
+        createdAt: new Date().toISOString(),
+      });
+    }
+    emitChange();
+    return newRM;
+  },
+
+  updateRawMaterial: (id: string, fields: Partial<RawMaterial>) => {
+    const idx = globalState.rawMaterials.findIndex((r) => r.id === id);
+    if (idx >= 0) {
+      globalState.rawMaterials[idx] = { ...globalState.rawMaterials[idx], ...fields };
+      emitChange();
+    }
+  },
+
+  deleteRawMaterial: (id: string) => {
+    globalState.rawMaterials = globalState.rawMaterials.filter((r) => r.id !== id);
+    emitChange();
+  },
+
+  // Batch Updates & Deletion
+  updateProductionBatch: (batchId: string, fields: Partial<ProductionBatch>) => {
+    const idx = globalState.productionBatches.findIndex((b) => b.id === batchId);
+    if (idx >= 0) {
+      globalState.productionBatches[idx] = { ...globalState.productionBatches[idx], ...fields };
+      emitChange();
+    }
+  },
+
+  updateBatchStatus: (batchId: string, status: BatchStatus) => {
+    const b = globalState.productionBatches.find((x) => x.id === batchId);
+    if (b) {
+      b.status = status;
+      if (status === 'RELEASED' && !b.releaseDate) {
+        b.releaseDate = new Date().toISOString().split('T')[0];
+      }
+      emitChange();
+    }
+  },
+
+  deleteProductionBatch: (batchId: string) => {
+    globalState.productionBatches = globalState.productionBatches.filter((b) => b.id !== batchId);
+    emitChange();
+  },
+
   // Stock Adjustments
   adjustStock: (itemId: string, isRaw: boolean, qtySigned: number, reason: string) => {
     const today = new Date().toISOString().split('T')[0];
@@ -1191,6 +1185,11 @@ export const store = {
         });
       }
     }
+    emitChange();
+  },
+
+  clearStockMovements: () => {
+    globalState.stockMovements = [];
     emitChange();
   },
 
@@ -1353,24 +1352,26 @@ export const store = {
 
   getSafetyStockAnalytics: (rawMaterialId?: string) => {
     const rm = globalState.rawMaterials.find((r) => (!rawMaterialId ? r.category === 'DAL' : r.id === rawMaterialId)) || globalState.rawMaterials[0];
+    const stock = rm ? rm.currentStock : 0;
     return calculateDynamicSafetyStock(
       [65, 80, 50, 95, 70, 110, 85, 75, 90, 60],
       [3, 4, 3, 5, 2, 4],
-      rm.currentStock,
+      stock,
       '95%'
     );
   },
 
   getEOQAnalytics: (rawMaterialId?: string) => {
     const rm = globalState.rawMaterials.find((r) => (!rawMaterialId ? r.category === 'DAL' : r.id === rawMaterialId)) || globalState.rawMaterials[0];
+    const cost = rm ? rm.costPerUnitInr : 90;
     return calculateEOQWithDiscounts(
       24000,
       500,
       18,
       [
-        { tierName: 'Small Lot (< 500kg)', minQty: 0, unitPriceInr: rm.costPerUnitInr + 3 },
-        { tierName: 'Standard Mandi Lot (500kg+)', minQty: 500, unitPriceInr: rm.costPerUnitInr },
-        { tierName: 'Bulk Direct Mill Truck (1000kg+)', minQty: 1000, unitPriceInr: Math.max(70, rm.costPerUnitInr - 4) },
+        { tierName: 'Small Lot (< 500kg)', minQty: 0, unitPriceInr: cost + 3 },
+        { tierName: 'Standard Mandi Lot (500kg+)', minQty: 500, unitPriceInr: cost },
+        { tierName: 'Bulk Direct Mill Truck (1000kg+)', minQty: 1000, unitPriceInr: Math.max(70, cost - 4) },
       ]
     );
   },
