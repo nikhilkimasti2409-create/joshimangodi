@@ -53,9 +53,14 @@ export default function POSPage() {
     });
   }, [products, selectedCategory, search]);
 
-  // Cart calculations with safe numeric parsing
+  // Cart calculations with safe dynamic numeric evaluation
   const cartSubtotal = useMemo(() => {
-    return cart.reduce((s, i) => s + (Number(i.totalInr) || 0), 0);
+    return cart.reduce((s, i) => {
+      const lineTotal = Number(i.totalInr) > 0
+        ? Number(i.totalInr)
+        : (Number(i.unitPriceInr || i.sku?.retailPriceInr || 0) * (Number(i.quantity) || 1));
+      return s + (Number(lineTotal) || 0);
+    }, 0);
   }, [cart]);
 
   const discountNum = Math.max(0, Number(discountAmount) || 0);
@@ -561,7 +566,7 @@ export default function POSPage() {
                             {item.sku.name}
                           </div>
                           <div className="text-xs text-[#632055] mt-0.5">
-                            {item.quantity} x ₹{item.unitPriceInr}
+                            {item.quantity} x ₹{Number(item.unitPriceInr) > 0 ? item.unitPriceInr : (item.sku.retailPriceInr || 0)}
                           </div>
                         </div>
 
@@ -583,7 +588,7 @@ export default function POSPage() {
                             </button>
                           </div>
                           <div className="w-16 text-right font-black text-sm text-[#31102A]">
-                            ₹{item.totalInr}
+                            ₹{(Number(item.totalInr) > 0 ? Number(item.totalInr) : (Number(item.unitPriceInr || item.sku.retailPriceInr || 0) * item.quantity)).toLocaleString('en-IN')}
                           </div>
                         </div>
                       </div>
@@ -678,7 +683,9 @@ export default function POSPage() {
                 <div key={item.sku.id} className="py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="font-black text-xs text-[#31102A] truncate">{item.sku.name}</div>
-                    <div className="text-xs text-[#632055]">{item.quantity} x ₹{item.unitPriceInr}</div>
+                    <div className="text-xs text-[#632055]">
+                      {item.quantity} x ₹{Number(item.unitPriceInr) > 0 ? item.unitPriceInr : (item.sku.retailPriceInr || 0)}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center bg-[#FFF9FA] border border-[#FCE7F3] rounded-xl">
@@ -696,7 +703,9 @@ export default function POSPage() {
                         +
                       </button>
                     </div>
-                    <div className="w-16 text-right font-black text-sm text-[#31102A]">₹{item.totalInr}</div>
+                    <div className="w-16 text-right font-black text-sm text-[#31102A]">
+                      ₹{(Number(item.totalInr) > 0 ? Number(item.totalInr) : (Number(item.unitPriceInr || item.sku.retailPriceInr || 0) * item.quantity)).toLocaleString('en-IN')}
+                    </div>
                   </div>
                 </div>
               ))}

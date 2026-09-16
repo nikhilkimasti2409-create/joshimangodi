@@ -336,6 +336,28 @@ function loadState(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const loadedChannel: SalesChannel = parsed.activeChannel || 'RETAIL';
+      const loadedCustomer: Customer | null = parsed.activeCustomer || null;
+      const rawCart: CartItem[] = Array.isArray(parsed.cart) ? parsed.cart : [];
+
+      const sanitizedCart: CartItem[] = rawCart.map((item) => {
+        if (!item || !item.sku) return item;
+        const priceRes = resolveSKUPrice(
+          item.sku,
+          item.quantity || 1,
+          loadedChannel,
+          loadedCustomer
+        );
+        const unitPrice = Number(item.unitPriceInr) > 0 ? Number(item.unitPriceInr) : priceRes.unitPriceInr;
+        const total = Number(item.totalInr) > 0 ? Number(item.totalInr) : (priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * (item.quantity || 1));
+        return {
+          ...item,
+          quantity: item.quantity || 1,
+          unitPriceInr: unitPrice,
+          totalInr: total,
+        };
+      }).filter(Boolean);
+
       return {
         products: parsed.products || INITIAL_PRODUCTS,
         customers: parsed.customers || INITIAL_CUSTOMERS,
@@ -350,9 +372,9 @@ function loadState(): AppState {
         reconciliations: parsed.reconciliations || [],
         dispatchTickets: parsed.dispatchTickets || INITIAL_DISPATCHES,
         inboundShipments: parsed.inboundShipments || INITIAL_INBOUND,
-        activeChannel: parsed.activeChannel || 'RETAIL',
-        activeCustomer: parsed.activeCustomer || null,
-        cart: parsed.cart || [],
+        activeChannel: loadedChannel,
+        activeCustomer: loadedCustomer,
+        cart: sanitizedCart,
         openingCashFloat: parsed.openingCashFloat ?? 0,
       };
     }
@@ -478,10 +500,12 @@ export const store = {
         channel,
         globalState.activeCustomer
       );
+      const unitPrice = priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(item.sku.retailPriceInr) || 0);
+      const total = priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * item.quantity;
       return {
         ...item,
-        unitPriceInr: priceRes.unitPriceInr,
-        totalInr: priceRes.totalInr,
+        unitPriceInr: unitPrice,
+        totalInr: total,
       };
     });
     emitChange();
@@ -499,10 +523,12 @@ export const store = {
         globalState.activeChannel,
         customer
       );
+      const unitPrice = priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(item.sku.retailPriceInr) || 0);
+      const total = priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * item.quantity;
       return {
         ...item,
-        unitPriceInr: priceRes.unitPriceInr,
-        totalInr: priceRes.totalInr,
+        unitPriceInr: unitPrice,
+        totalInr: total,
       };
     });
     emitChange();
@@ -518,17 +544,19 @@ export const store = {
       globalState.activeChannel,
       globalState.activeCustomer
     );
+    const unitPrice = priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(sku.retailPriceInr) || 0);
+    const total = priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * targetQty;
 
     if (existing) {
       existing.quantity = targetQty;
-      existing.unitPriceInr = priceRes.unitPriceInr;
-      existing.totalInr = priceRes.totalInr;
+      existing.unitPriceInr = unitPrice;
+      existing.totalInr = total;
     } else {
       globalState.cart.push({
         sku,
         quantity: targetQty,
-        unitPriceInr: priceRes.unitPriceInr,
-        totalInr: priceRes.totalInr,
+        unitPriceInr: unitPrice,
+        totalInr: total,
       });
     }
     emitChange();
@@ -546,9 +574,11 @@ export const store = {
           globalState.activeChannel,
           globalState.activeCustomer
         );
+        const unitPrice = priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(item.sku.retailPriceInr) || 0);
+        const total = priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * quantity;
         item.quantity = quantity;
-        item.unitPriceInr = priceRes.unitPriceInr;
-        item.totalInr = priceRes.totalInr;
+        item.unitPriceInr = unitPrice;
+        item.totalInr = total;
       }
     }
     emitChange();
@@ -577,7 +607,15 @@ export const store = {
 
     const customerGstin = globalState.activeCustomer?.gstin || undefined;
     const lineItems: OrderLineItem[] = globalState.cart.map((c) => {
-      const tax = calculateTaxBreakdown(c.totalInr, c.sku.gstRate || 5, customerGstin);
+      const priceRes = resolveSKUPrice(
+        c.sku,
+        c.quantity,
+        globalState.activeChannel,
+        globalState.activeCustomer
+      );
+      const unitPrice = Number(c.unitPriceInr) > 0 ? Number(c.unitPriceInr) : (priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(c.sku.retailPriceInr) || 0));
+      const total = Number(c.totalInr) > 0 ? Number(c.totalInr) : (priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * c.quantity);
+      const tax = calculateTaxBreakdown(total, c.sku.gstRate || 5, customerGstin);
       return {
         skuId: c.sku.id,
         skuName: c.sku.name,
@@ -585,8 +623,8 @@ export const store = {
         shape: c.sku.shape,
         packetSizeGrams: c.sku.packetSizeGrams,
         quantity: c.quantity,
-        unitPriceInr: c.unitPriceInr,
-        totalInr: c.totalInr,
+        unitPriceInr: unitPrice,
+        totalInr: total,
         gstRate: c.sku.gstRate || 5,
         gstAmount: tax.totalGstInr,
       };
