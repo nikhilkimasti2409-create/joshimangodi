@@ -8,9 +8,7 @@ import {
   ArrowRight,
   UserCheck,
   Sparkles,
-  Info,
   KeyRound,
-  ExternalLink,
 } from 'lucide-react';
 import { useAuth, ALLOWED_EMAILS } from '../lib/auth';
 
@@ -48,7 +46,6 @@ declare global {
 
 export default function LoginPage() {
   const {
-    user,
     isAuthenticated,
     authError,
     loginWithGoogleCredential,
@@ -66,29 +63,37 @@ export default function LoginPage() {
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  // Where to redirect after login
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/pos';
+  // Determine safe redirect destination
+  const fromState = (location.state as { from?: { pathname?: string } })?.from?.pathname;
+  const targetRoute = fromState && fromState !== '/' && fromState !== '/login' ? fromState : '/pos';
 
   // If already authenticated, redirect to destination
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      navigate(targetRoute, { replace: true });
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, navigate, targetRoute]);
 
-  // Load Google Identity Services script
+  // Load Google Identity Services script safely
   useEffect(() => {
-    const existingScript = document.getElementById('google-gsi-client');
-    if (!existingScript) {
-      const script = document.createElement('script');
-      script.id = 'google-gsi-client';
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setGoogleGsiLoaded(true);
-      document.body.appendChild(script);
-    } else {
-      setGoogleGsiLoaded(true);
+    try {
+      const existingScript = document.getElementById('google-gsi-client');
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.id = 'google-gsi-client';
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => setGoogleGsiLoaded(true);
+        script.onerror = () => {
+          console.warn('Google GSI script could not be loaded from network.');
+        };
+        document.head.appendChild(script);
+      } else {
+        setGoogleGsiLoaded(true);
+      }
+    } catch (e) {
+      console.warn('Script loading error:', e);
     }
   }, []);
 
@@ -104,10 +109,10 @@ export default function LoginPage() {
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (response) => {
-            if (response.credential) {
+            if (response?.credential) {
               const res = loginWithGoogleCredential(response.credential);
               if (res.success) {
-                navigate(from, { replace: true });
+                navigate(targetRoute, { replace: true });
               }
             }
           },
@@ -122,10 +127,10 @@ export default function LoginPage() {
           width: 320,
         });
       } catch (err) {
-        console.error('Failed to initialize Google Sign-In button:', err);
+        console.warn('Google Sign-In button render notice:', err);
       }
     }
-  }, [googleGsiLoaded, customClientId, loginWithGoogleCredential, navigate, from]);
+  }, [googleGsiLoaded, customClientId, loginWithGoogleCredential, navigate, targetRoute]);
 
   // Handle Quick Admin Login (with primary allowed email)
   const handleQuickAdminLogin = (emailToLogin: string) => {
@@ -135,9 +140,9 @@ export default function LoginPage() {
       const res = loginWithEmail(emailToLogin, 'Nikhil (Owner & Admin)');
       setIsSubmitting(false);
       if (res.success) {
-        navigate(from, { replace: true });
+        navigate(targetRoute, { replace: true });
       }
-    }, 400);
+    }, 250);
   };
 
   // Handle Manual Email Test/Login
@@ -150,9 +155,9 @@ export default function LoginPage() {
       const res = loginWithEmail(inputEmail.trim());
       setIsSubmitting(false);
       if (res.success) {
-        navigate(from, { replace: true });
+        navigate(targetRoute, { replace: true });
       }
-    }, 400);
+    }, 250);
   };
 
   return (
