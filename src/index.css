@@ -171,27 +171,45 @@ body {
   animation: slideInFromLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Print Styling for 80mm POS Thermal Printers */
+/* Print Styling for POS Invoices & Thermal Receipts */
 @media print {
   body {
     background: #FFFFFF !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  .no-print {
-    display: none !important;
+
+  /* Hide everything on the page except the printable receipt container */
+  body * {
+    visibility: hidden !important;
   }
-  .print-only {
-    display: block !important;
+
+  #printable-receipt, #printable-receipt * {
+    visibility: visible !important;
   }
-  .receipt-thermal {
-    width: 72mm !important;
-    max-width: 72mm !important;
+
+  #printable-receipt {
+    position: fixed !important;
+    left: 50% !important;
+    top: 0 !important;
+    transform: translateX(-50%) !important;
+    width: 80mm !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 2mm !important;
+    padding: 5mm !important;
     font-size: 11px !important;
-    line-height: 1.3 !important;
-    font-family: monospace, -apple-system, sans-serif !important;
+    line-height: 1.35 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace !important;
     box-shadow: none !important;
     border: none !important;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    z-index: 999999 !important;
+  }
+
+  .no-print, nav, header, aside, .jm-navbar {
+    display: none !important;
+    visibility: hidden !important;
   }
 }

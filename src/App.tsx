@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
+import { ToastContainer } from './components/common/Toast';
 import POSPage from './pages/POSPage';
 import ProductsPage from './pages/ProductsPage';
 import CustomersPage from './pages/CustomersPage';
@@ -11,6 +12,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-[#FFF9FA] text-[#31102A] flex flex-col font-sans">
+        <ToastContainer />
         <Navbar />
         <main className="flex-1">
           <Routes>

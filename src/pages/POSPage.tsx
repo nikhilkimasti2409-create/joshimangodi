@@ -16,9 +16,11 @@ import {
   ChevronUp,
   SlidersHorizontal,
   Tag,
+  QrCode,
 } from 'lucide-react';
 import { useAppState, store } from '../lib/store';
 import { t } from '../lib/i18n';
+import { showToast } from '../components/common/Toast';
 import { playTapSound, playSuccessSound, playErrorSound, speakEnglish } from '../lib/audio';
 import type { ProductSKU, Order, PaymentMethod } from '../types';
 
@@ -36,6 +38,8 @@ export default function POSPage() {
   const [viewHistory, setViewHistory] = useState(false);
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
   const [mobileCartDrawerOpen, setMobileCartDrawerOpen] = useState(false);
+  const [voidModalOrder, setVoidModalOrder] = useState<Order | null>(null);
+  const [voidReason, setVoidReason] = useState('');
 
   // Filter products
   const filteredProducts = useMemo(() => {
@@ -49,17 +53,18 @@ export default function POSPage() {
     });
   }, [products, selectedCategory, search]);
 
-  // Cart calculations
+  // Cart calculations with safe numeric parsing
   const cartSubtotal = useMemo(() => {
-    return cart.reduce((s, i) => s + i.totalInr, 0);
+    return cart.reduce((s, i) => s + (Number(i.totalInr) || 0), 0);
   }, [cart]);
 
-  const discountNum = Number(discountAmount) || 0;
+  const discountNum = Math.max(0, Number(discountAmount) || 0);
   const grandTotal = Math.max(0, cartSubtotal - discountNum);
 
   const handleAddToCart = (product: ProductSKU) => {
     playTapSound();
     store.addToCart(product, 1);
+    showToast('Item Added', `${product.name} added to cart`, 'info', 1200);
   };
 
   const handleUpdateQty = (skuId: string, qty: number) => {
@@ -69,13 +74,15 @@ export default function POSPage() {
 
   const handleClearCart = () => {
     if (cart.length === 0) return;
-    if (confirm('Clear all items from current cart?')) {
-      store.clearCart();
-    }
+    store.clearCart();
+    showToast('Cart Cleared', 'All items removed from cart', 'info');
   };
 
   const openCheckout = () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0) {
+      showToast('Empty Cart', 'Add at least one product to create a bill', 'warning');
+      return;
+    }
     setReceivedAmount(String(grandTotal));
     setPaymentMode('Cash');
     setMobileCartDrawerOpen(false);
@@ -84,23 +91,29 @@ export default function POSPage() {
 
   const handleFinalizeBill = (e: React.FormEvent) => {
     e.preventDefault();
-    const paidNum = paymentMode === 'Credit' ? 0 : Number(receivedAmount) || grandTotal;
+    const paidNum = paymentMode === 'Credit' ? 0 : (receivedAmount !== '' ? Number(receivedAmount) : grandTotal);
+
+    if (paymentMode === 'Credit' && !activeCustomer) {
+      showToast('Customer Required', 'Please attach a customer to record credit on Khata.', 'warning');
+      return;
+    }
 
     if (paymentMode !== 'Credit' && paidNum < grandTotal && !activeCustomer) {
-      alert('Please attach a customer to record credit/due balance on Khata.');
+      showToast('Customer Required', 'Attach customer to record remaining balance on Khata.', 'warning');
       return;
     }
 
     try {
       const newOrder = store.createOrder({
         paymentMethod: paymentMode,
-        amountPaidInr: paidNum,
+        amountPaidInr: Math.max(0, paidNum),
         discountInr: discountNum,
         notes: orderNotes.trim() || undefined,
       });
 
       playSuccessSound();
       speakEnglish(`Bill completed. Total ₹${grandTotal}`);
+      showToast('Bill Generated', `Bill #${newOrder.billNo} for ₹${grandTotal} completed!`, 'success');
 
       setCompletedOrder(newOrder);
       setIsCheckoutOpen(false);
@@ -110,32 +123,63 @@ export default function POSPage() {
       setReceivedAmount('');
     } catch (err) {
       playErrorSound();
-      alert('Error creating bill');
+      showToast('Billing Error', 'Failed to generate bill. Please verify cart items.', 'error');
     }
   };
 
-  // WhatsApp Bill Text Generator
+  const handleVoidSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!voidModalOrder) return;
+    if (!voidReason.trim()) {
+      showToast('Reason Required', 'Please enter reason for voiding bill', 'warning');
+      return;
+    }
+
+    store.voidOrder(voidModalOrder.id, voidReason.trim());
+    showToast('Bill Voided', `Bill ${voidModalOrder.billNo} voided and stock restocked.`, 'info');
+    setVoidModalOrder(null);
+    setVoidReason('');
+  };
+
+  // WhatsApp Bill Text Generator - Clean & Professional (No internal wholesale tier classifications)
   const generateWhatsAppLink = (order: Order) => {
-    const itemsText = order.items
-      .map((i) => `• ${i.skuName} (${i.quantity} pcs x ₹${i.unitPriceInr}) = ₹${i.totalInr}`)
+    const itemsList = order.items
+      .map((i) => `• ${i.skuName} (${i.quantity} x ₹${i.unitPriceInr}) = ₹${i.totalInr}`)
       .join('%0A');
 
-    const msg = `*JOSHI MANGODI - CASH INVOICE*%0A` +
-      `--------------------------------%0A` +
-      `Bill No: *${order.billNo}*%0A` +
-      `Date: ${order.date}%0A` +
-      `Customer: ${order.customerName || 'Counter Retail'}%0A` +
-      `--------------------------------%0A` +
-      `${itemsText}%0A` +
-      `--------------------------------%0A` +
-      `*GRAND TOTAL: ₹${order.grandTotalInr}*%0A` +
-      `Payment Mode: ${order.paymentMethod}%0A` +
-      (order.creditAddedInr > 0 ? `*Khata Due Added: ₹${order.creditAddedInr}*%0A` : '') +
-      `Thank you for your business!%0A` +
-      `Fatehpur, Sikar · Pure Handmade Moong Dal Mangodi`;
+    const upiPayLink = `upi://pay?pa=nikhilkimasti2409@okaxis&pn=Joshi%20Mangodi%20Udyog&am=${order.creditAddedInr}&cu=INR`;
 
-    const phone = order.customerPhone ? `91${order.customerPhone.replace(/[^\d]/g, '').slice(-10)}` : '';
-    return `https://wa.me/${phone}?text=${msg}`;
+    let msg = `*JOSHI MANGODI UDYOG - TAX INVOICE*%0A` +
+      `--------------------------------%0A` +
+      `*Bill No:* ${order.billNo}%0A` +
+      `*Date:* ${order.date}%0A` +
+      `*Customer:* ${order.customerName || 'Counter Retail'}%0A` +
+      (order.customerGstin ? `*GSTIN:* ${order.customerGstin}%0A` : '') +
+      `--------------------------------%0A` +
+      `*ITEMS:*%0A${itemsList}%0A` +
+      `--------------------------------%0A` +
+      `*Subtotal:* ₹${order.subtotalInr}%0A` +
+      (order.discountInr > 0 ? `*Discount:* -₹${order.discountInr}%0A` : '') +
+      `*GST (Incl.):* ₹${order.gstAmountInr}%0A` +
+      `*GRAND TOTAL:* *₹${order.grandTotalInr}*%0A` +
+      `*Payment Mode:* ${order.paymentMethod}%0A` +
+      `*Amount Paid:* ₹${order.amountPaidInr}%0A`;
+
+    if (order.creditAddedInr > 0) {
+      msg += `--------------------------------%0A` +
+        `*⚠️ BALANCE DUE / KHATA:* *₹${order.creditAddedInr}*%0A` +
+        `%0A👉 *Pay Due Online via UPI:*%0A` +
+        `UPI ID: *nikhilkimasti2409@okaxis*%0A` +
+        `Payment Link: ${encodeURIComponent(upiPayLink)}%0A`;
+    }
+
+    msg += `--------------------------------%0A` +
+      `Thank you for your business!%0A` +
+      `JOSHI MANGODI UDYOG · Fatehpur, Sikar (Raj.)%0A` +
+      `Pure Handmade Moong Dal Mangodi`;
+
+    const cleanPhone = order.customerPhone ? `91${order.customerPhone.replace(/[^\d]/g, '').slice(-10)}` : '';
+    return `https://wa.me/${cleanPhone}?text=${msg}`;
   };
 
   return (
@@ -290,10 +334,8 @@ export default function POSPage() {
                           {!ord.isVoid && (
                             <button
                               onClick={() => {
-                                const reason = prompt('Enter reason for voiding bill:');
-                                if (reason) {
-                                  store.voidOrder(ord.id, reason);
-                                }
+                                setVoidModalOrder(ord);
+                                setVoidReason('');
                               }}
                               className="p-2 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 cursor-pointer"
                               title="Void Bill & Restock"
@@ -801,23 +843,38 @@ export default function POSPage() {
               )}
 
               {paymentMode === 'UPI' && (
-                <div className="p-4 rounded-2xl bg-[#FEFCE8] border border-[#FDE047] text-center space-y-2">
-                  <p className="text-xs font-bold text-[#31102A]">Scan Shop UPI QR Code:</p>
-                  <div className="inline-block p-2.5 bg-white rounded-xl border border-[#FDE047]">
-                    <div className="w-28 h-28 bg-gray-100 flex items-center justify-center font-mono text-[11px] text-gray-500 border border-dashed border-gray-300">
-                      [ UPI QR ₹{grandTotal} ]
-                    </div>
+                <div className="p-4 rounded-2xl bg-[#FEFCE8] border border-[#FDE047] text-center space-y-2.5">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-black text-[#31102A]">
+                    <QrCode size={16} className="text-[#9F1239]" />
+                    <span>Scan Shop UPI QR Code to Pay:</span>
                   </div>
-                  <p className="text-xs font-bold text-emerald-800">UPI ID: joshimangodi@sbi</p>
+                  <div className="inline-block p-2 bg-white rounded-2xl border-2 border-[#FDE047] shadow-sm">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`upi://pay?pa=nikhilkimasti2409@okaxis&pn=Joshi%20Mangodi%20Udyog&am=${grandTotal}&cu=INR`)}`}
+                      alt="UPI QR Code"
+                      className="w-32 h-32 mx-auto rounded-lg"
+                    />
+                  </div>
+                  <div className="text-xs font-mono font-bold text-emerald-900 bg-emerald-50 py-1.5 px-3 rounded-xl border border-emerald-200">
+                    UPI ID: <strong>nikhilkimasti2409@okaxis</strong>
+                  </div>
+                  <div className="text-[11px] text-[#632055]">
+                    Amount: <strong className="text-[#9F1239] font-black">₹{grandTotal}</strong> · Auto verified at counter
+                  </div>
                 </div>
               )}
 
               {paymentMode === 'Credit' && (
-                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-800 font-semibold">
+                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-800 font-semibold space-y-1">
                   {activeCustomer ? (
-                    <p>₹{grandTotal} will be added to {activeCustomer.name}'s Khata ledger.</p>
+                    <>
+                      <div className="font-bold text-red-950">Khata Due Credit Account</div>
+                      <div>₹{grandTotal} will be added to <strong>{activeCustomer.name}</strong>'s outstanding balance.</div>
+                    </>
                   ) : (
-                    <p className="text-red-900 font-bold">Customer selection required for Khata/Credit bills!</p>
+                    <div className="text-red-900 font-black">
+                      ⚠️ Customer selection required to record credit / Khata bill!
+                    </div>
                   )}
                 </div>
               )}
@@ -844,9 +901,60 @@ export default function POSPage() {
                 <button
                   type="submit"
                   disabled={paymentMode === 'Credit' && !activeCustomer}
-                  className="jm-btn-primary flex-1 !font-black !text-base"
+                  className="jm-btn-primary flex-1 !font-black !text-base shadow-md"
                 >
                   Save Bill
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Void Bill Confirmation Modal */}
+      {voidModalOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-red-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-red-100 pb-3">
+              <div className="font-black text-lg text-red-950">Void & Restock Bill</div>
+              <button onClick={() => setVoidModalOrder(null)} className="text-gray-400 hover:text-black font-bold">
+                ✕
+              </button>
+            </div>
+
+            <div className="text-xs text-[#632055] space-y-1">
+              <div>Are you sure you want to void Bill <strong className="text-[#31102A]">{voidModalOrder.billNo}</strong>?</div>
+              <div>Amount: <strong className="text-red-700 font-bold">₹{voidModalOrder.grandTotalInr}</strong> · Customer: <strong>{voidModalOrder.customerName}</strong></div>
+              <div className="text-[11px] text-gray-500 pt-1">All {voidModalOrder.items.length} items will be automatically returned to stock.</div>
+            </div>
+
+            <form onSubmit={handleVoidSubmit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#31102A] mb-1">Reason for Cancellation *</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={voidReason}
+                  onChange={(e) => setVoidReason(e.target.value)}
+                  placeholder="e.g. Customer cancelled order / Billing mistake"
+                  className="jm-input !text-xs"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setVoidModalOrder(null)}
+                  className="jm-btn-secondary flex-1 !text-xs"
+                >
+                  Keep Bill
+                </button>
+                <button
+                  type="submit"
+                  className="jm-btn-primary flex-1 !text-xs !bg-red-700 hover:!bg-red-800 !text-white !border-red-800 !font-black"
+                >
+                  Confirm Void
                 </button>
               </div>
             </form>
@@ -868,13 +976,17 @@ export default function POSPage() {
               </button>
             </div>
 
-            {/* Thermal Print Slip */}
-            <div className="receipt-thermal bg-white border border-gray-200 rounded-2xl p-5 font-mono text-xs text-black shadow-inner space-y-2">
-              <div className="text-center pb-2 border-b border-dashed border-gray-400">
-                <h2 className="font-extrabold text-sm tracking-wider">JOSHI MANGODI</h2>
-                <p className="text-[11px]">Near Head Post Office, Fatehpur, Sikar (Raj.)</p>
-                <p className="text-[10px]">Mob: +91 98290 12345 | GSTIN: 08AAACJ1234F1Z9</p>
-                <p className="text-[10px] font-bold mt-1">*** CASH / TAX INVOICE ***</p>
+            {/* Thermal Print Slip with ID for Clean Browser Printing */}
+            <div
+              id="printable-receipt"
+              className="receipt-thermal bg-white border border-gray-200 rounded-2xl p-5 font-mono text-xs text-black shadow-inner space-y-2.5"
+            >
+              <div className="text-center pb-2.5 border-b border-dashed border-gray-400">
+                <h2 className="font-extrabold text-base tracking-wider text-black">JOSHI MANGODI UDYOG</h2>
+                <p className="text-[11px] font-medium text-gray-700">Pure Handmade Moong Dal Mangodi</p>
+                <p className="text-[10px] text-gray-600">Near Head Post Office, Fatehpur, Sikar (Raj.)</p>
+                <p className="text-[10px] text-gray-600">Mob: +91 98290 12345 | GSTIN: 08AABFJ1234F1Z5</p>
+                <p className="text-[11px] font-black mt-1.5 uppercase tracking-wide">*** TAX INVOICE ***</p>
               </div>
 
               <div className="py-2 border-b border-dashed border-gray-400 text-[11px] space-y-0.5">
@@ -883,21 +995,21 @@ export default function POSPage() {
                   <span>{completedOrder.date}</span>
                 </div>
                 <div>Customer: <strong>{completedOrder.customerName}</strong></div>
-                {completedOrder.customerPhone && <div>Phone: {completedOrder.customerPhone}</div>}
-                <div>Channel: {completedOrder.channel}</div>
+                {completedOrder.customerPhone && <div>Phone: +91 {completedOrder.customerPhone}</div>}
+                {completedOrder.customerGstin && <div>GSTIN: {completedOrder.customerGstin}</div>}
               </div>
 
               <div className="py-2 border-b border-dashed border-gray-400">
-                <div className="flex justify-between font-bold pb-1 text-[10px] uppercase">
+                <div className="flex justify-between font-bold pb-1 text-[10px] uppercase text-gray-700">
                   <span>Item</span>
                   <span>Qty x Rate</span>
-                  <span>Amt</span>
+                  <span className="text-right">Amt</span>
                 </div>
                 {completedOrder.items.map((it, idx) => (
                   <div key={idx} className="flex justify-between py-0.5 text-[11px]">
-                    <span className="truncate max-w-[130px]">{it.skuName}</span>
-                    <span>{it.quantity} x {it.unitPriceInr}</span>
-                    <span className="font-bold">₹{it.totalInr}</span>
+                    <span className="truncate max-w-[130px] font-medium">{it.skuName}</span>
+                    <span>{it.quantity} x ₹{it.unitPriceInr}</span>
+                    <span className="font-bold text-right">₹{it.totalInr}</span>
                   </div>
                 ))}
               </div>
@@ -914,33 +1026,48 @@ export default function POSPage() {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>GST (Incl.):</span>
+                  <span>GST (Included):</span>
                   <span>₹{completedOrder.gstAmountInr}</span>
                 </div>
-                <div className="flex justify-between font-extrabold text-sm pt-1 border-t border-gray-300">
+                <div className="flex justify-between font-extrabold text-sm pt-1.5 border-t border-gray-300">
                   <span>GRAND TOTAL:</span>
                   <span>₹{completedOrder.grandTotalInr}</span>
                 </div>
-                <div className="flex justify-between text-[10px]">
+                <div className="flex justify-between text-[11px]">
                   <span>Paid ({completedOrder.paymentMethod}):</span>
                   <span>₹{completedOrder.amountPaidInr}</span>
                 </div>
                 {completedOrder.changeDueInr > 0 && (
-                  <div className="flex justify-between text-[10px] font-bold">
+                  <div className="flex justify-between text-[11px] font-bold text-emerald-900">
                     <span>Change Returned:</span>
                     <span>₹{completedOrder.changeDueInr}</span>
                   </div>
                 )}
                 {completedOrder.creditAddedInr > 0 && (
-                  <div className="flex justify-between text-[10px] font-bold text-red-800">
-                    <span>Khata Due Added:</span>
+                  <div className="flex justify-between text-[11px] font-black text-red-800">
+                    <span>Balance Due on Khata:</span>
                     <span>₹{completedOrder.creditAddedInr}</span>
                   </div>
                 )}
               </div>
 
-              <div className="text-center pt-2 text-[10px]">
-                <p>Thank you for visiting!</p>
+              {/* Dynamic UPI QR Code on Printed Receipt if Balance is Due */}
+              {completedOrder.creditAddedInr > 0 && (
+                <div className="py-2.5 border-b border-dashed border-gray-400 text-center space-y-1.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-800">
+                    Scan to Pay Due Balance (₹{completedOrder.creditAddedInr}):
+                  </p>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(`upi://pay?pa=nikhilkimasti2409@okaxis&pn=Joshi%20Mangodi%20Udyog&am=${completedOrder.creditAddedInr}&cu=INR`)}`}
+                    alt="UPI Due QR Code"
+                    className="w-24 h-24 mx-auto border p-1 bg-white"
+                  />
+                  <p className="text-[9px] font-mono text-gray-700">UPI ID: nikhilkimasti2409@okaxis</p>
+                </div>
+              )}
+
+              <div className="text-center pt-2 text-[10px] text-gray-600">
+                <p className="font-bold">Thank you for your visit!</p>
                 <p>Traditional Handmade Taste of Rajasthan</p>
               </div>
             </div>
@@ -948,7 +1075,7 @@ export default function POSPage() {
             <div className="flex gap-3 pt-2 no-print">
               <button
                 onClick={() => window.print()}
-                className="jm-btn-secondary flex-1 !text-xs !py-3 flex items-center justify-center gap-1.5"
+                className="jm-btn-secondary flex-1 !text-xs !py-3 flex items-center justify-center gap-1.5 shadow-xs"
               >
                 <Printer size={16} /> Print Receipt
               </button>
@@ -964,7 +1091,7 @@ export default function POSPage() {
 
             <button
               onClick={() => setIsReceiptModalOpen(false)}
-              className="w-full py-3 rounded-2xl bg-[#31102A] text-white text-xs font-black hover:bg-black cursor-pointer no-print transition"
+              className="w-full py-3 rounded-2xl bg-[#31102A] text-white text-xs font-black hover:bg-black cursor-pointer no-print transition shadow-sm"
             >
               Start Next Bill
             </button>

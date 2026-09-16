@@ -22,6 +22,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAppState, store } from '../lib/store';
+import { showToast } from '../components/common/Toast';
 import {
   calculateBatchYieldMetrics,
   calculateLaborPayouts,
@@ -180,7 +181,7 @@ export default function ProductionPage() {
   const handleSaveWorker = (e: React.FormEvent) => {
     e.preventDefault();
     if (!workerName.trim()) {
-      alert('Please enter worker name.');
+      showToast('Name Required', 'Please enter worker name.', 'warning');
       return;
     }
 
@@ -193,6 +194,7 @@ export default function ProductionPage() {
         dailyWageInr: Number(workerDailyWage) || 0,
         notes: workerNotes,
       });
+      showToast('Worker Updated', `${workerName.trim()}'s profile updated.`, 'success');
     } else {
       store.addWorker({
         name: workerName,
@@ -202,15 +204,15 @@ export default function ProductionPage() {
         dailyWageInr: Number(workerDailyWage) || 0,
         notes: workerNotes,
       });
+      showToast('Worker Added', `${workerName} added to kaarigar ledger.`, 'success');
     }
 
     setIsWorkerModalOpen(false);
   };
 
   const handleDeleteWorker = (workerId: string, name: string) => {
-    if (window.confirm(`Are you sure you want to remove worker "${name}"?`)) {
-      store.deleteWorker(workerId);
-    }
+    store.deleteWorker(workerId);
+    showToast('Worker Removed', `Worker "${name}" removed.`, 'info');
   };
 
   // Worker Payout Handlers
@@ -227,7 +229,7 @@ export default function ProductionPage() {
     e.preventDefault();
     const amt = Number(payoutAmount);
     if (!amt || amt <= 0) {
-      alert('Please enter a valid payout amount.');
+      showToast('Invalid Amount', 'Please enter a valid payout amount.', 'warning');
       return;
     }
 
@@ -239,6 +241,7 @@ export default function ProductionPage() {
       paymentMethod: payoutMethod,
     });
 
+    showToast('Payout Recorded', `₹${amt} labor payout recorded.`, 'success');
     setIsPayoutModalOpen(false);
   };
 
@@ -262,7 +265,7 @@ export default function ProductionPage() {
     const rateNum = Number(lotRate);
 
     if (!lotNo.trim() || !weightNum || weightNum <= 0) {
-      alert('Please enter a valid Lot Number and Weight.');
+      showToast('Invalid Input', 'Please enter a valid Lot Number and Weight.', 'warning');
       return;
     }
 
@@ -276,6 +279,7 @@ export default function ProductionPage() {
       notes: lotNotes,
     });
 
+    showToast('Dal Lot Added', `Lot ${newLot.lotNo} (${newLot.initialWeightKg}kg) recorded.`, 'success');
     setSelectedDalLotId(newLot.id);
     setIsDalLotModalOpen(false);
   };

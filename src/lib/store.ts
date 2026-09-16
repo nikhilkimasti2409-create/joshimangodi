@@ -42,7 +42,7 @@ import {
 import historicalOrdersData from './historicalOrders.json';
 import realCustomersData from './realCustomers.json';
 
-const STORAGE_KEY = 'joshi_mangodi_ops_state_v6';
+const STORAGE_KEY = 'joshi_mangodi_ops_state_v7';
 
 // Real product catalog matching Joshi Mangodi fixed sales sheet (₹200/kg retail rate, ₹170/kg wholesale rate)
 export const INITIAL_PRODUCTS: ProductSKU[] = [
@@ -353,7 +353,7 @@ function loadState(): AppState {
         activeChannel: parsed.activeChannel || 'RETAIL',
         activeCustomer: parsed.activeCustomer || null,
         cart: parsed.cart || [],
-        openingCashFloat: parsed.openingCashFloat ?? 5000,
+        openingCashFloat: parsed.openingCashFloat ?? 0,
       };
     }
   } catch (e) {
@@ -377,7 +377,7 @@ function loadState(): AppState {
     activeChannel: 'RETAIL',
     activeCustomer: null,
     cart: [],
-    openingCashFloat: 5000,
+    openingCashFloat: 0,
   };
 }
 
@@ -716,6 +716,33 @@ export const store = {
     globalState.customers.unshift(newCust);
     emitChange();
     return newCust;
+  },
+
+  updateCustomer: (customerId: string, fields: Partial<Customer>) => {
+    const idx = globalState.customers.findIndex((c) => c.id === customerId);
+    if (idx >= 0) {
+      globalState.customers[idx] = {
+        ...globalState.customers[idx],
+        ...fields,
+      };
+      if (globalState.activeCustomer?.id === customerId) {
+        globalState.activeCustomer = { ...globalState.activeCustomer, ...fields };
+      }
+      emitChange();
+    }
+  },
+
+  deleteCustomer: (customerId: string) => {
+    globalState.customers = globalState.customers.filter((c) => c.id !== customerId);
+    if (globalState.activeCustomer?.id === customerId) {
+      globalState.activeCustomer = null;
+    }
+    emitChange();
+  },
+
+  setOpeningCashFloat: (amount: number) => {
+    globalState.openingCashFloat = Math.max(0, Number(amount) || 0);
+    emitChange();
   },
 
   recordCustomerPayment: (payment: {

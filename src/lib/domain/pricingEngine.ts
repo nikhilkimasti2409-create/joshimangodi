@@ -49,6 +49,7 @@ export interface OrderFinancialSummary {
 
 /**
  * Resolves the optimal unit price for a given SKU and customer context.
+ * Always ensures positive, non-zero unit price and total when quantity > 0.
  */
 export function resolveSKUPrice(
   sku: ProductSKU,
@@ -56,84 +57,94 @@ export function resolveSKUPrice(
   channel: SalesChannel,
   customer: Customer | null = null
 ): PriceResolutionResult {
-  const packetGrams = sku.packetSizeGrams || 500;
-  const weightKg = (quantity * packetGrams) / 1000;
+  const packetGrams = Number(sku.packetSizeGrams) || 500;
+  const qty = Math.max(1, Number(quantity) || 1);
+  const weightKg = (qty * packetGrams) / 1000;
+
+  // Base fallback price from product
+  const baseRetail = Number(sku.retailPriceInr) || 0;
+  const baseMrp = Number(sku.mrpInr) || (baseRetail > 0 ? Math.round(baseRetail * 1.15) : 0);
+  const baseWholesaleT1 = Number(sku.wholesaleT1PriceInr) || (baseRetail > 0 ? Math.round(baseRetail * 0.85) : 0);
+  const baseWholesaleT2 = Number(sku.wholesaleT2PriceInr) || (baseRetail > 0 ? Math.round(baseRetail * 0.80) : 0);
+
+  const fallbackUnitPrice = baseRetail || baseMrp || baseWholesaleT1 || baseWholesaleT2 || (Number(sku.unitCostInr) ? Math.round(Number(sku.unitCostInr) * 1.3) : 50);
+  const effectiveMrp = baseMrp || fallbackUnitPrice;
 
   // 1. Check Customer Contract Price Override (in INR per kg)
-  if (customer && customer.contractPricePerKg && customer.contractPricePerKg > 0) {
-    const unitPrice = round2((customer.contractPricePerKg * packetGrams) / 1000);
-    const total = round2(unitPrice * quantity);
-    const savings = round2(Math.max(0, sku.mrpInr * quantity - total));
+  if (customer && customer.contractPricePerKg && Number(customer.contractPricePerKg) > 0) {
+    const unitPrice = round2((Number(customer.contractPricePerKg) * packetGrams) / 1000);
+    const total = round2(unitPrice * qty);
+    const savings = round2(Math.max(0, effectiveMrp * qty - total));
     return {
-      unitPriceInr: unitPrice,
-      totalInr: total,
+      unitPriceInr: unitPrice > 0 ? unitPrice : fallbackUnitPrice,
+      totalInr: total > 0 ? total : round2(fallbackUnitPrice * qty),
       priceSource: 'CONTRACT_OVERRIDE',
-      unitMrpInr: sku.mrpInr,
+      unitMrpInr: effectiveMrp,
       savingsVsMrpInr: savings,
     };
   }
 
   // 2. Check Volume Discount Quantity Breaks
-  if (weightKg >= 50 && sku.wholesaleT2PriceInr > 0) {
-    const unitPrice = sku.wholesaleT2PriceInr;
-    const total = round2(unitPrice * quantity);
-    const savings = round2(Math.max(0, sku.mrpInr * quantity - total));
+  if (weightKg >= 50 && baseWholesaleT2 > 0) {
+    const unitPrice = baseWholesaleT2;
+    const total = round2(unitPrice * qty);
+    const savings = round2(Math.max(0, effectiveMrp * qty - total));
     return {
       unitPriceInr: unitPrice,
       totalInr: total,
       priceSource: 'VOLUME_TIER_2',
-      unitMrpInr: sku.mrpInr,
+      unitMrpInr: effectiveMrp,
       savingsVsMrpInr: savings,
     };
   }
 
-  if (weightKg >= 10 && sku.wholesaleT1PriceInr > 0) {
-    const unitPrice = sku.wholesaleT1PriceInr;
-    const total = round2(unitPrice * quantity);
-    const savings = round2(Math.max(0, sku.mrpInr * quantity - total));
+  if (weightKg >= 10 && baseWholesaleT1 > 0) {
+    const unitPrice = baseWholesaleT1;
+    const total = round2(unitPrice * qty);
+    const savings = round2(Math.max(0, effectiveMrp * qty - total));
     return {
       unitPriceInr: unitPrice,
       totalInr: total,
       priceSource: 'VOLUME_TIER_1',
-      unitMrpInr: sku.mrpInr,
+      unitMrpInr: effectiveMrp,
       savingsVsMrpInr: savings,
     };
   }
 
   // 3. Channel Tier
-  if (channel === 'WHOLESALE_T2' && sku.wholesaleT2PriceInr > 0) {
-    const unitPrice = sku.wholesaleT2PriceInr;
-    const total = round2(unitPrice * quantity);
+  if (channel === 'WHOLESALE_T2' && baseWholesaleT2 > 0) {
+    const unitPrice = baseWholesaleT2;
+    const total = round2(unitPrice * qty);
     return {
       unitPriceInr: unitPrice,
       totalInr: total,
       priceSource: 'CHANNEL_WHOLESALE_T2',
-      unitMrpInr: sku.mrpInr,
-      savingsVsMrpInr: round2(Math.max(0, sku.mrpInr * quantity - total)),
+      unitMrpInr: effectiveMrp,
+      savingsVsMrpInr: round2(Math.max(0, effectiveMrp * qty - total)),
     };
   }
 
-  if (channel === 'WHOLESALE_T1' && sku.wholesaleT1PriceInr > 0) {
-    const unitPrice = sku.wholesaleT1PriceInr;
-    const total = round2(unitPrice * quantity);
+  if (channel === 'WHOLESALE_T1' && baseWholesaleT1 > 0) {
+    const unitPrice = baseWholesaleT1;
+    const total = round2(unitPrice * qty);
     return {
       unitPriceInr: unitPrice,
       totalInr: total,
       priceSource: 'CHANNEL_WHOLESALE_T1',
-      unitMrpInr: sku.mrpInr,
-      savingsVsMrpInr: round2(Math.max(0, sku.mrpInr * quantity - total)),
+      unitMrpInr: effectiveMrp,
+      savingsVsMrpInr: round2(Math.max(0, effectiveMrp * qty - total)),
     };
   }
 
   // 4. Default Retail Price
-  const unitPrice = sku.retailPriceInr;
-  const total = round2(unitPrice * quantity);
+  const finalUnitPrice = baseRetail > 0 ? baseRetail : fallbackUnitPrice;
+  const total = round2(finalUnitPrice * qty);
   return {
-    unitPriceInr: unitPrice,
+    unitPriceInr: finalUnitPrice,
     totalInr: total,
     priceSource: 'RETAIL',
-    unitMrpInr: sku.mrpInr,
-    savingsVsMrpInr: round2(Math.max(0, sku.mrpInr * quantity - total)),
+    unitMrpInr: effectiveMrp,
+    savingsVsMrpInr: round2(Math.max(0, effectiveMrp * qty - total)),
   };
 }
 

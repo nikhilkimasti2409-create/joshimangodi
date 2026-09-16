@@ -28,6 +28,7 @@ import {
 import { useAppState, store, PRESET_SAMPLE_PRODUCTS } from '../lib/store';
 import { toRFC4180CSV, downloadFile, parseCSV } from '../lib/csv';
 import { round2, calculateTaxBreakdown } from '../lib/domain';
+import { showToast } from '../components/common/Toast';
 import type { ProductSKU } from '../types';
 
 // Built-in asset gallery images
@@ -247,7 +248,7 @@ export default function ProductsPage() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert('Image file size is too large (max 2MB). Please pick a smaller image.');
+      showToast('Image Too Large', 'Please select an image smaller than 2MB.', 'warning');
       return;
     }
 
@@ -265,11 +266,11 @@ export default function ProductsPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert('Product Name is required.');
+      showToast('Name Required', 'Product Name is required.', 'warning');
       return;
     }
     if (formData.retailPriceInr <= 0) {
-      alert('Retail price must be greater than 0.');
+      showToast('Invalid Price', 'Retail price must be greater than ₹0.', 'warning');
       return;
     }
 
@@ -294,8 +295,10 @@ export default function ProductsPage() {
 
     if (isEditing && editingProductId) {
       store.updateProduct(editingProductId, productPayload);
+      showToast('Product Updated', `${formData.name.trim()} updated successfully.`, 'success');
     } else {
       store.addProduct(productPayload);
+      showToast('Product Added', `${formData.name.trim()} added to catalog.`, 'success');
     }
 
     setIsFormModalOpen(false);
@@ -303,27 +306,21 @@ export default function ProductsPage() {
 
   // Delete product
   const handleDeleteProduct = (product: ProductSKU) => {
-    if (confirm(`Are you sure you want to delete "${product.name}"? This cannot be undone.`)) {
-      store.deleteProduct(product.id);
-    }
+    store.deleteProduct(product.id);
+    showToast('Product Deleted', `"${product.name}" deleted from catalog.`, 'info');
   };
 
   // Clear all products
   const handleClearAll = () => {
     if (products.length === 0) return;
-    const confirm1 = confirm('⚠️ WARNING: This will DELETE ALL PRODUCTS from the catalog.\n\nAre you sure you want to proceed?');
-    if (confirm1) {
-      const confirm2 = confirm('Confirm again: Delete ALL products? (Your previous sales history will be preserved).');
-      if (confirm2) {
-        store.clearAllProducts();
-      }
-    }
+    store.clearAllProducts();
+    showToast('Catalog Cleared', 'All products deleted from catalog.', 'info');
   };
 
   // Export current catalog to CSV
   const handleExportCSV = () => {
     if (products.length === 0) {
-      alert('No products to export.');
+      showToast('No Products', 'No products in catalog to export.', 'warning');
       return;
     }
     const headers = [
@@ -583,7 +580,7 @@ export default function ProductsPage() {
   const handleCommitCsvImport = () => {
     if (csvPreviewRows.length === 0) return;
     const addedCount = store.importProductsBulk(csvPreviewRows);
-    alert(`Successfully imported ${addedCount} products into your catalog!`);
+    showToast('Import Complete', `Successfully imported ${addedCount} products into your catalog!`, 'success');
     setIsCsvModalOpen(false);
     setCsvPreviewRows([]);
     setCsvErrors([]);
@@ -1022,7 +1019,7 @@ export default function ProductsPage() {
                   <button
                     onClick={() => {
                       store.addToCart(prod, 1);
-                      alert(`Added 1 packet of "${prod.name}" to POS cart.`);
+                      showToast('Added to Cart', `Added 1 packet of "${prod.name}" to POS cart.`, 'success', 1200);
                     }}
                     className="px-3 py-1.5 rounded-xl bg-[#FBCFE8] border border-[#E5B6D3] text-[#31102A] font-extrabold text-[11px] hover:bg-[#f9a8d4] active:scale-95 transition cursor-pointer"
                   >

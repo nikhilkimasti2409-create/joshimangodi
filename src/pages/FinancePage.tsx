@@ -15,9 +15,12 @@ import {
   Archive,
   Trash2,
   Code2,
+  Edit2,
+  Coins,
 } from 'lucide-react';
 import { useAppState, store } from '../lib/store';
 import { t } from '../lib/i18n';
+import { showToast } from '../components/common/Toast';
 import { toRFC4180CSV, downloadFile } from '../lib/csv';
 import type { Expense, PaymentMethod, CashDenominations } from '../types';
 
@@ -27,6 +30,8 @@ export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'PNL' | 'DRAWER' | 'EXPENSES' | 'LOGISTICS' | 'EXPORTS'>('PNL');
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isDrawerModalOpen, setIsDrawerModalOpen] = useState(false);
+  const [isFloatModalOpen, setIsFloatModalOpen] = useState(false);
+  const [newFloatAmount, setNewFloatAmount] = useState(String(openingCashFloat || 0));
 
   // Expense Form State
   const [expCategory, setExpCategory] = useState<Expense['category']>('PISAI');
@@ -35,15 +40,15 @@ export default function FinancePage() {
   const [expMode, setExpMode] = useState<PaymentMethod>('Cash');
   const [expNote, setExpNote] = useState('');
 
-  // Cash Drawer Denominations State
+  // Cash Drawer Denominations State - 100% Clean Zero Initial State
   const [denoms, setDenoms] = useState<CashDenominations>({
-    n500: 8,
-    n200: 4,
-    n100: 5,
-    n50: 6,
-    n20: 10,
-    n10: 15,
-    coins: 40,
+    n500: 0,
+    n200: 0,
+    n100: 0,
+    n50: 0,
+    n20: 0,
+    n10: 0,
+    coins: 0,
   });
   const [drawerNotes, setDrawerNotes] = useState('');
 
@@ -86,7 +91,7 @@ export default function FinancePage() {
     e.preventDefault();
     const amt = Number(expAmount);
     if (!amt || amt <= 0) {
-      alert('Enter a valid expense amount.');
+      showToast('Invalid Amount', 'Please enter a valid positive expense amount.', 'warning');
       return;
     }
 
@@ -99,36 +104,47 @@ export default function FinancePage() {
       note: expNote.trim(),
     });
 
+    showToast('Expense Logged', `₹${amt} recorded under ${expCategory}.`, 'success');
     setIsExpenseModalOpen(false);
     setExpAmount('');
     setExpVendor('');
     setExpNote('');
   };
 
-  const handleCloseDrawer = () => {
-    if (confirm(`Confirm closing today's cash drawer? Variance: ₹${drawerVariance}`)) {
-      store.closeCashDrawer({
-        date: todayStr,
-        openingFloatInr: openingCashFloat,
-        cashSalesInr: todayCashSales,
-        cashExpensesInr: todayCashExpenses,
-        expectedCashInr: expectedCashInDrawer,
-        countedCashInr: countedCash,
-        varianceInr: drawerVariance,
-        denominations: denoms,
-        nextDayFloatInr: Math.min(5000, countedCash),
-        operator: 'Anjali B. (Owner)',
-        notes: drawerNotes.trim() || undefined,
-      });
+  const handleSaveOpeningFloat = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = Math.max(0, Number(newFloatAmount) || 0);
+    store.setOpeningCashFloat(amt);
+    showToast('Float Updated', `Morning cash float set to ₹${amt}.`, 'success');
+    setIsFloatModalOpen(false);
+  };
 
-      setIsDrawerModalOpen(false);
-      alert('Cash drawer closed and reconciliation archived.');
-    }
+  const handleCloseDrawer = () => {
+    store.closeCashDrawer({
+      date: todayStr,
+      openingFloatInr: openingCashFloat,
+      cashSalesInr: todayCashSales,
+      cashExpensesInr: todayCashExpenses,
+      expectedCashInr: expectedCashInDrawer,
+      countedCashInr: countedCash,
+      varianceInr: drawerVariance,
+      denominations: denoms,
+      nextDayFloatInr: Math.min(5000, countedCash),
+      operator: 'Anjali B. (Owner)',
+      notes: drawerNotes.trim() || undefined,
+    });
+
+    setIsDrawerModalOpen(false);
+    showToast('Drawer Reconciled', `Cash drawer closed. Variance: ₹${drawerVariance}.`, 'success');
   };
 
   // CSV & XML Exports
   const exportGSTR1CSV = () => {
     const validOrders = orders.filter((o) => !o.isVoid);
+    if (validOrders.length === 0) {
+      showToast('No Orders', 'No sales bills found to generate GSTR-1 CSV.', 'warning');
+      return;
+    }
     const headers = ['Invoice Number', 'Invoice Date', 'Channel', 'Customer Name', 'GSTIN', 'Taxable Value', 'GST Rate %', 'CGST Amount', 'SGST Amount', 'Total Invoice Value', 'Payment Mode'];
     const rows = validOrders.map((o) => {
       const taxable = Math.round((o.grandTotalInr - o.gstAmountInr) * 100) / 100;
@@ -150,24 +166,32 @@ export default function FinancePage() {
 
     const csv = toRFC4180CSV(headers, rows);
     downloadFile(`joshi-mangodi-gstr1-${todayStr}.csv`, csv);
+    showToast('Download Complete', 'GSTR-1 Sales CSV exported successfully.', 'success');
   };
 
   const exportExpensesCSV = () => {
+    if (expenses.length === 0) {
+      showToast('No Expenses', 'No expenses recorded yet.', 'warning');
+      return;
+    }
     const headers = ['Date', 'Category', 'Vendor / Payee', 'Payment Mode', 'Amount (INR)', 'Note'];
     const rows = expenses.map((e) => [e.date, e.category, e.vendor, e.paymentMethod, e.amountInr, e.note]);
     const csv = toRFC4180CSV(headers, rows);
     downloadFile(`joshi-mangodi-expenses-${todayStr}.csv`, csv);
+    showToast('Download Complete', 'Expenses Day-Book CSV exported successfully.', 'success');
   };
 
   const exportTallyXML = () => {
     const xml = store.exportTallyXmlString();
     downloadFile(`joshi-mangodi-tally-vouchers-${todayStr}.xml`, xml, 'application/xml');
+    showToast('Download Complete', 'Tally Prime XML vouchers exported successfully.', 'success');
   };
 
   const exportFullJSONBackup = () => {
     const fullState = store.getState();
     const jsonStr = JSON.stringify(fullState, null, 2);
     downloadFile(`joshi-mangodi-full-backup-${todayStr}.json`, jsonStr, 'application/json');
+    showToast('Download Complete', 'Full operational JSON backup saved.', 'success');
   };
 
   return (
@@ -352,9 +376,21 @@ export default function FinancePage() {
               </div>
 
               <div className="space-y-2 p-3.5 rounded-xl bg-[#FFF9FA] border border-[#FCE7F3] text-xs">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Morning Opening Float:</span>
-                  <span className="font-bold">₹{openingCashFloat.toLocaleString('en-IN')}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#31102A]">₹{openingCashFloat.toLocaleString('en-IN')}</span>
+                    <button
+                      onClick={() => {
+                        setNewFloatAmount(String(openingCashFloat));
+                        setIsFloatModalOpen(true);
+                      }}
+                      className="p-1 rounded-md hover:bg-white border border-[#FCE7F3] text-[#9F1239] cursor-pointer"
+                      title="Edit Opening Float"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                  </div>
                 </div>
                 <div className="flex justify-between text-emerald-800">
                   <span>+ Today's Cash Inflows:</span>
@@ -523,11 +559,13 @@ export default function FinancePage() {
                       <td className="p-2.5 sm:p-3 text-right">
                         <button
                           onClick={() => {
-                            if (confirm('Delete expense?')) store.deleteExpense(exp.id);
+                            store.deleteExpense(exp.id);
+                            showToast('Expense Deleted', `₹${exp.amountInr} expense removed.`, 'info');
                           }}
-                          className="p-1 rounded text-red-600 hover:bg-red-50 cursor-pointer"
+                          className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer transition"
+                          title="Delete Expense"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={14} />
                         </button>
                       </td>
                     </tr>
@@ -881,11 +919,73 @@ export default function FinancePage() {
               <button
                 type="button"
                 onClick={handleCloseDrawer}
-                className="jm-btn-primary flex-1 !font-black bg-[#31102A] hover:bg-black text-white cursor-pointer"
+                className="jm-btn-primary flex-1 !font-black bg-[#31102A] hover:bg-black text-white cursor-pointer shadow-md"
               >
                 Confirm & Close Drawer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Set Morning Cash Float Modal */}
+      {isFloatModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 sm:p-6 border-2 border-[#FCE7F3] shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#FCE7F3] pb-2">
+              <div>
+                <h3 className="font-black text-base sm:text-lg text-[#31102A]">Set Morning Cash Float</h3>
+                <p className="text-xs text-[#632055]">Counter opening physical cash</p>
+              </div>
+              <button onClick={() => setIsFloatModalOpen(false)} className="text-gray-400 hover:text-black font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveOpeningFloat} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#31102A] mb-1">Morning Opening Float (₹)</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  autoFocus
+                  value={newFloatAmount}
+                  onChange={(e) => setNewFloatAmount(e.target.value)}
+                  placeholder="e.g. 2000"
+                  className="jm-input !text-lg !font-black text-[#31102A]"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                {[0, 1000, 2000, 3000, 5000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setNewFloatAmount(String(amt))}
+                    className="flex-1 py-1.5 rounded-lg border border-[#FCE7F3] bg-[#FFF9FA] text-xs font-bold hover:bg-[#FEFCE8]"
+                  >
+                    ₹{amt}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsFloatModalOpen(false)}
+                  className="jm-btn-secondary flex-1 cursor-pointer"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="jm-btn-primary flex-1 !font-black cursor-pointer shadow-md"
+                >
+                  Save Float
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

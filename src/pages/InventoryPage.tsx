@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAppState, store } from '../lib/store';
 import { t } from '../lib/i18n';
+import { showToast } from '../components/common/Toast';
 import { toRFC4180CSV, downloadFile } from '../lib/csv';
 import type { RawMaterial } from '../types';
 
@@ -105,12 +106,12 @@ export default function InventoryPage() {
   const safetyStockMetrics = useMemo(() => {
     if (!selectedRawMaterial) return null;
     return store.getSafetyStockAnalytics(selectedRawMaterial.id);
-  }, [selectedRawMaterial]);
+  }, [selectedRawMaterial, rawMaterials]);
 
   const eoqAnalysis = useMemo(() => {
     if (!selectedRawMaterial) return null;
     return store.getEOQAnalytics(selectedRawMaterial.id);
-  }, [selectedRawMaterial]);
+  }, [selectedRawMaterial, rawMaterials]);
 
   // Raw Material Handlers
   const handleOpenAddRaw = () => {
@@ -120,8 +121,8 @@ export default function InventoryPage() {
     setRawCategory('DAL');
     setRawUnit('KG');
     setRawStock('100');
-    setRawRop('30');
-    setRawCost('92');
+    setRawRop('20');
+    setRawCost('90');
     setRawSupplier('');
     setIsRawModalOpen(true);
   };
@@ -142,7 +143,7 @@ export default function InventoryPage() {
   const handleSaveRawMaterial = (e: React.FormEvent) => {
     e.preventDefault();
     if (!rawName.trim()) {
-      alert('Please enter material name.');
+      showToast('Name Required', 'Please enter material name.', 'warning');
       return;
     }
 
@@ -157,6 +158,7 @@ export default function InventoryPage() {
         costPerUnitInr: Number(rawCost) || 0,
         supplierName: rawSupplier.trim(),
       });
+      showToast('Material Updated', `${rawName.trim()} updated.`, 'success');
     } else {
       store.addRawMaterial({
         name: rawName.trim(),
@@ -168,15 +170,15 @@ export default function InventoryPage() {
         costPerUnitInr: Number(rawCost) || 0,
         supplierName: rawSupplier.trim(),
       });
+      showToast('Material Added', `${rawName.trim()} added to inventory.`, 'success');
     }
 
     setIsRawModalOpen(false);
   };
 
   const handleDeleteRaw = (id: string, name: string) => {
-    if (window.confirm(`Delete Raw Material "${name}"?`)) {
-      store.deleteRawMaterial(id);
-    }
+    store.deleteRawMaterial(id);
+    showToast('Material Removed', `Raw Material "${name}" deleted.`, 'info');
   };
 
   // Stock Adjustment Handlers
@@ -194,17 +196,18 @@ export default function InventoryPage() {
     e.preventDefault();
     const qtyNum = Number(adjQty);
     if (!qtyNum || qtyNum <= 0) {
-      alert('Enter a valid positive quantity.');
+      showToast('Invalid Quantity', 'Enter a valid positive quantity.', 'warning');
       return;
     }
 
     if (!adjItemId) {
-      alert('Please select an item to adjust.');
+      showToast('Selection Required', 'Please select an item to adjust.', 'warning');
       return;
     }
 
     const signedQty = adjType === 'IN' ? qtyNum : -qtyNum;
     store.adjustStock(adjItemId, adjIsRaw, signedQty, `${adjReason}${adjNotes ? `: ${adjNotes}` : ''}`);
+    showToast('Stock Adjusted', `Stock adjusted by ${signedQty > 0 ? `+${signedQty}` : signedQty}`, 'success');
     setIsAdjustModalOpen(false);
   };
 
@@ -215,6 +218,7 @@ export default function InventoryPage() {
 
     const csv = toRFC4180CSV(headers, [...prodRows, ...rawRows]);
     downloadFile(`joshi-mangodi-inventory-${new Date().toISOString().split('T')[0]}.csv`, csv);
+    showToast('Download Complete', 'Inventory CSV exported successfully.', 'success');
   };
 
   return (
