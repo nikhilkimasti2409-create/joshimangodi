@@ -5,15 +5,13 @@ import {
   Lock,
   AlertOctagon,
   ArrowRight,
-  UserCheck,
   KeyRound,
   Mail,
   RefreshCw,
   ArrowLeft,
-  Info,
   Clock,
-  CheckCircle2,
   AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth, PRIMARY_ADMIN_EMAIL } from '../lib/auth';
 
@@ -73,8 +71,8 @@ export default function LoginPage() {
   const [customClientId, setCustomClientId] = useState('');
   const [showConfig, setShowConfig] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [simulatedCodeBanner, setSimulatedCodeBanner] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpSentNotification, setOtpSentNotification] = useState(false);
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
@@ -125,8 +123,9 @@ export default function LoginPage() {
               setIsSubmitting(true);
               const res = await requestOtpForGoogleCredential(response.credential);
               setIsSubmitting(false);
-              if (res.success && res.simulatedCode) {
-                setSimulatedCodeBanner(res.simulatedCode);
+              if (res.success) {
+                setOtpSentNotification(true);
+                setResendCooldown(30);
               }
             }
           },
@@ -163,18 +162,17 @@ export default function LoginPage() {
     }
   }, [pendingOtp]);
 
-  // Handle Quick Admin Request OTP
+  // Handle Request OTP
   const handleRequestOtp = async (emailToRequest: string) => {
     if (isSubmitting || isLockedOut) return;
     setIsSubmitting(true);
     clearError();
-    setSimulatedCodeBanner(null);
 
     const res = await requestOtpForEmail(emailToRequest);
     setIsSubmitting(false);
 
-    if (res.success && res.simulatedCode) {
-      setSimulatedCodeBanner(res.simulatedCode);
+    if (res.success) {
+      setOtpSentNotification(true);
       setResendCooldown(30);
     }
   };
@@ -189,7 +187,6 @@ export default function LoginPage() {
   // Handle OTP digit changes
   const handleDigitChange = (index: number, value: string) => {
     clearError();
-    // Allow single numeric digit or handle paste
     if (value.length > 1) {
       const pasted = value.replace(/\D/g, '').slice(0, 6);
       if (pasted) {
@@ -210,7 +207,6 @@ export default function LoginPage() {
     newDigits[index] = value;
     setOtpDigits(newDigits);
 
-    // Auto advance focus
     if (value && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
     }
@@ -247,8 +243,8 @@ export default function LoginPage() {
     const res = await resendOtp();
     setIsSubmitting(false);
 
-    if (res.success && res.simulatedCode) {
-      setSimulatedCodeBanner(res.simulatedCode);
+    if (res.success) {
+      setOtpSentNotification(true);
       setResendCooldown(30);
     }
   };
@@ -271,13 +267,13 @@ export default function LoginPage() {
           />
           <div>
             <h1 className="font-serif-brand font-black text-xl text-[#31102A]">JOSHI MANGODI</h1>
-            <p className="text-[11px] font-semibold text-[#632055] -mt-0.5">Operations & Billing Portal</p>
+            <p className="text-[11px] font-semibold text-[#632055] -mt-0.5">Operations Portal</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-[#FCE7F3] text-xs text-[#31102A] font-bold shadow-xs">
           <ShieldCheck size={16} className="text-emerald-600" />
-          <span className="hidden sm:inline">Strict 2FA Protected</span>
+          <span className="hidden sm:inline">2FA OTP Protected</span>
         </div>
       </header>
 
@@ -310,14 +306,14 @@ export default function LoginPage() {
                 </div>
 
                 <div className="inline-flex items-center gap-1.5 bg-[#31102A] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                  <ShieldCheck size={13} className="text-emerald-400" /> Owner Authentication
+                  <ShieldCheck size={13} className="text-emerald-400" /> Secure Login
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-serif-brand font-black text-[#31102A]">
-                  Secure Access Portal
+                  Sign In
                 </h2>
                 <p className="text-xs sm:text-sm text-[#632055] font-medium leading-relaxed max-w-sm mx-auto">
-                  Only the authorized owner email (<strong className="underline font-bold">{PRIMARY_ADMIN_EMAIL}</strong>) can request access. An OTP code will be sent to confirm identity.
+                  A verification OTP code will be sent directly to your registered Gmail address to complete sign in.
                 </p>
               </div>
 
@@ -332,7 +328,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* One-Click Quick Google/Owner Verification */}
+              {/* One-Click Send OTP Button */}
               <div className="space-y-3">
                 <div ref={googleButtonRef} className="flex justify-center" />
 
@@ -343,7 +339,7 @@ export default function LoginPage() {
                   className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#31102A] text-white hover:bg-[#4A183F] font-black text-sm sm:text-base shadow-md hover:shadow-lg active:scale-[0.99] transition cursor-pointer disabled:opacity-50"
                 >
                   <Mail size={18} className="text-emerald-400" />
-                  <span>Send OTP to {PRIMARY_ADMIN_EMAIL}</span>
+                  <span>Send OTP to Gmail</span>
                   <ArrowRight size={18} />
                 </button>
               </div>
@@ -351,7 +347,7 @@ export default function LoginPage() {
               <div className="relative flex py-1 items-center">
                 <div className="flex-grow border-t border-gray-200"></div>
                 <span className="flex-shrink mx-4 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                  OR VERIFY EMAIL ADDRESS
+                  OR ENTER REGISTERED GMAIL
                 </span>
                 <div className="flex-grow border-t border-gray-200"></div>
               </div>
@@ -360,14 +356,14 @@ export default function LoginPage() {
               <form onSubmit={handleEmailFormSubmit} className="space-y-3">
                 <div>
                   <label className="block text-xs font-extrabold text-[#31102A] mb-1">
-                    Enter Whitelisted Admin Email:
+                    Registered Gmail Address:
                   </label>
                   <input
                     type="email"
                     required
                     value={inputEmail}
                     onChange={(e) => setInputEmail(e.target.value)}
-                    placeholder="nikhilkimasti2409@gmail.com"
+                    placeholder="e.g. user@gmail.com"
                     className="w-full px-4 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm font-semibold text-[#31102A] focus:bg-white focus:outline-hidden focus:border-[#9F1239] transition"
                   />
                 </div>
@@ -377,34 +373,10 @@ export default function LoginPage() {
                   disabled={isSubmitting || !inputEmail.trim() || isLockedOut}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#9F1239] text-white font-extrabold text-sm shadow-md hover:bg-[#881337] active:scale-[0.99] transition cursor-pointer disabled:opacity-50"
                 >
-                  <span>Request 6-Digit OTP</span>
+                  <span>Get 6-Digit OTP</span>
                   <ArrowRight size={16} />
                 </button>
               </form>
-
-              {/* Whitelist Info Card */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-[#FFF9FA] to-[#FEFCE8] border border-[#FCE7F3] space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="font-extrabold text-[#31102A] flex items-center gap-1.5">
-                    <UserCheck size={14} className="text-emerald-600" /> Whitelisted Owner Account:
-                  </div>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                    Strict Whitelist
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#632055] bg-white p-2.5 rounded-xl border border-pink-100">
-                  <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
-                  <span className="truncate">{PRIMARY_ADMIN_EMAIL}</span>
-                  <span className="ml-auto text-[10px] font-sans font-bold bg-[#FBCFE8] text-[#31102A] px-2 py-0.5 rounded-md">
-                    Super Admin
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-gray-500 pt-1 leading-snug">
-                  🔒 Unauthorized accounts cannot request OTP or bypass authentication under any circumstances.
-                </p>
-              </div>
             </>
           )}
 
@@ -417,7 +389,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-widest px-3 py-0.5 rounded-full">
-                  <Clock size={12} className="text-emerald-600" /> OTP Verification Sent
+                  <Clock size={12} className="text-emerald-600" /> OTP Dispatched
                 </div>
 
                 <h2 className="text-2xl font-serif-brand font-black text-[#31102A]">
@@ -425,27 +397,15 @@ export default function LoginPage() {
                 </h2>
 
                 <p className="text-xs sm:text-sm text-[#632055] font-medium leading-relaxed max-w-sm mx-auto">
-                  A 6-digit passcode has been issued to <strong className="font-extrabold text-[#31102A]">{pendingOtp.email}</strong>.
+                  A 6-digit passcode has been sent to your Gmail inbox (<strong className="font-extrabold text-[#31102A]">{pendingOtp.email}</strong>).
                 </p>
               </div>
 
-              {/* Simulated OTP Code Notification Box (for fast dev/testing if EmailJS keys aren't set) */}
-              {simulatedCodeBanner && (
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                      <Info size={15} className="text-amber-600" /> Verification Code Issued:
-                    </span>
-                    <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-0.5 rounded-md">
-                      Simulated Security Mode
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-amber-800">Your OTP Code:</span>
-                    <span className="text-xl font-mono font-black tracking-widest text-[#9F1239] bg-white px-3 py-1 rounded-xl border border-amber-200 shadow-xs">
-                      {simulatedCodeBanner}
-                    </span>
-                  </div>
+              {/* Confirmation Notification Banner */}
+              {otpSentNotification && (
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span className="font-semibold">OTP sent to your Gmail! Check your inbox or spam folder.</span>
                 </div>
               )}
 
@@ -464,7 +424,7 @@ export default function LoginPage() {
               <form onSubmit={handleVerifyOtpSubmit} className="space-y-6">
                 <div>
                   <label className="block text-center text-xs font-extrabold text-[#31102A] mb-3">
-                    Type 6-Digit Verification Passcode:
+                    Type 6-Digit Passcode:
                   </label>
 
                   <div className="flex items-center justify-center gap-2 sm:gap-3">
@@ -496,7 +456,7 @@ export default function LoginPage() {
                   ) : (
                     <ShieldCheck size={20} />
                   )}
-                  <span>Verify OTP & Unlock Dashboard</span>
+                  <span>Verify OTP & Sign In</span>
                 </button>
               </form>
 
@@ -528,7 +488,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Optional: Config modal toggle */}
+          {/* Optional: Custom Google Client ID Config */}
           <div className="border-t border-gray-100 pt-3">
             <button
               type="button"
@@ -560,7 +520,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <footer className="w-full max-w-4xl text-center py-3 text-xs text-gray-400 font-medium">
-        Joshi Mangodi Operations v2 · Single-Owner Restricted Access with 2FA OTP
+        Joshi Mangodi Operations v2 · Protected with 2FA OTP Authentication
       </footer>
     </div>
   );
