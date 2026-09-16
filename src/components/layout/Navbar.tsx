@@ -12,27 +12,14 @@ import {
   Menu,
   X,
   ChevronRight,
-  UserCheck,
-  ShieldCheck,
-  Phone,
-  Sparkles,
-  LogOut,
-  User as UserIcon,
 } from 'lucide-react';
 import { useAppState, store } from '../../lib/store';
-import { useAuth } from '../../lib/auth';
 import { t } from '../../lib/i18n';
 
 export default function Navbar() {
-  const { activeCustomer, activeChannel, cart, products, orders, customers } = useAppState();
-  const { user, logout } = useAuth();
+  const { activeCustomer, activeChannel, cart, products } = useAppState();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // If on login page, don't show operational navbar
-  if (location.pathname === '/login') {
-    return null;
-  }
 
   // Close sidebar on route change
   useEffect(() => {
@@ -103,48 +90,20 @@ export default function Navbar() {
             <span className="text-pink-200 text-[11px]">· Fatehpur, Sikar (Rajasthan)</span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
-            {user && (
-              <div className="flex items-center gap-2 border-r border-pink-900/60 pr-4">
-                {user.picture ? (
-                  <img src={user.picture} alt={user.name} className="w-5 h-5 rounded-full border border-pink-300" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-[#FBCFE8] text-[#31102A] font-black flex items-center justify-center text-[10px]">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span className="text-pink-100 font-semibold">{user.email}</span>
-                <span className="text-[10px] bg-pink-900/80 text-pink-200 px-1.5 py-0.5 rounded font-mono">
-                  {user.role}
-                </span>
-              </div>
-            )}
             <span className="inline-flex items-center gap-1.5 text-emerald-300">
               <CheckCircle2 size={13} /> {t('online_status')}
             </span>
             <button
               onClick={() => {
-                if (confirm('Reset sample data to initial state?')) {
+                if (confirm('Reset real sales data & catalog to initial state?')) {
                   store.resetToDefaults();
                 }
               }}
               className="text-pink-200 hover:text-white inline-flex items-center gap-1 transition cursor-pointer"
               title="Reset Data"
             >
-              <RotateCcw size={12} /> Reset Data
+              <RotateCcw size={12} /> Reset Real Data
             </button>
-            {user && (
-              <button
-                onClick={() => {
-                  if (confirm('Are you sure you want to sign out?')) {
-                    logout();
-                  }
-                }}
-                className="text-red-300 hover:text-red-100 inline-flex items-center gap-1 transition cursor-pointer font-bold ml-1"
-                title="Sign Out"
-              >
-                <LogOut size={12} /> Logout
-              </button>
-            )}
           </div>
         </div>
 
@@ -214,7 +173,7 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Right: Channel Switcher & Mobile Menu Trigger Indicator */}
+          {/* Right: Channel Switcher */}
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-white border border-[#FCE7F3] rounded-2xl p-1 shadow-xs">
               <button
@@ -424,45 +383,15 @@ export default function Navbar() {
 
               <button
                 onClick={() => {
-                  if (confirm('Reset sample data to initial state?')) {
+                  if (confirm('Reset real sales data & catalog to initial state?')) {
                     store.resetToDefaults();
                     setSidebarOpen(false);
                   }
                 }}
                 className="w-full py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <RotateCcw size={14} /> Reset Demo Data
+                <RotateCcw size={14} /> Reset Real Data
               </button>
-
-              {user && (
-                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2 truncate">
-                    {user.picture ? (
-                      <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full border border-pink-200" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-[#31102A] text-white font-black flex items-center justify-center text-xs">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="truncate">
-                      <div className="text-xs font-extrabold text-[#31102A] truncate">{user.name}</div>
-                      <div className="text-[10px] text-gray-500 font-mono truncate">{user.email}</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (confirm('Sign out from Joshi Mangodi Operations?')) {
-                        logout();
-                        setSidebarOpen(false);
-                      }
-                    }}
-                    className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
-                    title="Sign Out"
-                  >
-                    <LogOut size={16} />
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
