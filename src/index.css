@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+:root {
+  --jm-surface: #FFF9FA;
+  --jm-surface-alt: #FEFCE8;
+  --jm-ink: #31102A;
+  --jm-ink-soft: #632055;
+  --jm-primary: #FBCFE8;
+  --jm-primary-press: #F472B6;
+  --jm-focus: #FEF08A;
+  --jm-line: #FCE7F3;
+  --jm-line-dark: #E5B6D3;
+  --jm-success: #047857;
+  --jm-success-soft: #D1FAE5;
+  --jm-danger: #9F1239;
+  --jm-danger-soft: #FFE4E6;
+  --jm-warning: #B45309;
+  --jm-warning-soft: #FEF3C7;
+  --jm-gold: #D97706;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--jm-surface);
+  color: var(--jm-ink);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+.font-serif-brand {
+  font-family: 'Cinzel', serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(251, 207, 232, 0.15);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 32, 85, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 32, 85, 0.4);
+}
+
+/* Spacious, Airy Card Utilities */
+.jm-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--jm-line);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -4px rgba(49, 16, 42, 0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.jm-card:hover {
+  box-shadow: 0 8px 30px -4px rgba(49, 16, 42, 0.08);
+}
+
+.jm-card-alt {
+  background-color: var(--jm-surface-alt);
+  border: 1px solid #FDE047;
+  border-radius: 1.25rem;
+}
+
+/* Touch & Desktop Button Utilities */
+.jm-btn-primary {
+  min-height: 48px;
+  background-color: var(--jm-primary);
+  color: var(--jm-ink);
+  font-weight: 800;
+  border-radius: 1rem;
+  padding: 0.75rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  border: 1.5px solid var(--jm-line-dark);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+}
+.jm-btn-primary:hover {
+  background-color: var(--jm-primary-press);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -2px rgba(244, 114, 182, 0.35);
+}
+.jm-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.jm-btn-secondary {
+  min-height: 48px;
+  background-color: #FFFFFF;
+  color: var(--jm-ink);
+  font-weight: 700;
+  border-radius: 1rem;
+  padding: 0.75rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  border: 1.5px solid var(--jm-line);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+}
+.jm-btn-secondary:hover {
+  background-color: var(--jm-surface-alt);
+  border-color: #FDE047;
+  transform: translateY(-1px);
+}
+.jm-btn-secondary:active {
+  transform: translateY(1px);
+}
+
+.jm-input {
+  min-height: 48px;
+  width: 100%;
+  border-radius: 1rem;
+  border: 1.5px solid var(--jm-line);
+  background-color: #FFFFFF;
+  padding: 0.75rem 1.25rem;
+  color: var(--jm-ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  outline: none;
+}
+.jm-input:focus {
+  border-color: var(--jm-primary-press);
+  box-shadow: 0 0 0 4px rgba(251, 207, 232, 0.45);
+}
+
+.jm-select {
+  min-height: 48px;
+  width: 100%;
+  border-radius: 1rem;
+  border: 1.5px solid var(--jm-line);
+  background-color: #FFFFFF;
+  padding: 0.75rem 1.25rem;
+  color: var(--jm-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+.jm-select:focus {
+  border-color: var(--jm-primary-press);
+  box-shadow: 0 0 0 4px rgba(251, 207, 232, 0.45);
+}
+
+/* Animations */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInFromLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Print Styling for 80mm POS Thermal Printers */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .receipt-thermal {
+    width: 72mm !important;
+    max-width: 72mm !important;
+    margin: 0 auto !important;
+    padding: 2mm !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    font-family: monospace, -apple-system, sans-serif !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
