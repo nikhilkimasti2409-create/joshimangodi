@@ -1076,7 +1076,7 @@ export default function ProductionPage() {
                       type="button"
                       onClick={() => setPayoutMethod(m)}
                       className={`py-2 rounded-xl text-xs font-bold border cursor-pointer ${
-                        payoutMethod === m ? 'bg-[ink] text-white' : 'bg-white text-ink-muted border-border'
+                        payoutMethod === m ? 'bg-ink text-white' : 'bg-white text-ink-muted border-border'
                       }`}
                     >
                       {m}
@@ -1208,39 +1208,41 @@ export default function ProductionPage() {
 
       {/* ==================== MODAL: CHANGE BATCH STATUS ==================== */}
       <Modal id="batch-status" isOpen={!!statusBatch} onClose={() => setStatusBatch(null)} title="Update Batch Status">
-        <form onSubmit={handleUpdateStatus} className="space-y-3.5">
-              <div className="text-xs text-ink-muted">
-                Batch: <span className="font-mono font-bold text-ink">{statusBatch.batchCode}</span> ({statusBatch.productType})
-              </div>
+        {statusBatch && (
+          <form onSubmit={handleUpdateStatus} className="space-y-3.5">
+            <div className="text-xs text-ink-muted">
+              Batch: <span className="font-mono font-bold text-ink">{statusBatch.batchCode}</span> ({statusBatch.productType})
+            </div>
 
-              <div>
-                <label htmlFor="selectnewstatus_id" className="block text-xs font-bold text-ink mb-1">Select New Status</label>
-                <select id="selectnewstatus_id"
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as BatchStatus)}
-                  className="jm-select "
-                >
-                  <option value="DRYING">DRYING (धूप में सुखाना चालू है)</option>
-                  <option value="QC_CHECK">QC_CHECK (क्वालिटी व मॉइस्चर जांच)</option>
-                  <option value="CURING">CURING (कूलिंग व सेट होना)</option>
-                  <option value="RELEASED">RELEASED (स्टॉक में पास होकर ऐड करें ✓)</option>
-                  <option value="REJECTED">REJECTED (खारिज)</option>
-                </select>
-              </div>
+            <div>
+              <label htmlFor="selectnewstatus_id" className="block text-xs font-bold text-ink mb-1">Select New Status</label>
+              <select id="selectnewstatus_id"
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value as BatchStatus)}
+                className="jm-select "
+              >
+                <option value="DRYING">DRYING (धूप में सुखाना चालू है)</option>
+                <option value="QC_CHECK">QC_CHECK (क्वालिटी व मॉइस्चर जांच)</option>
+                <option value="CURING">CURING (कूलिंग व सेट होना)</option>
+                <option value="RELEASED">RELEASED (स्टॉक में पास होकर ऐड करें ✓)</option>
+                <option value="REJECTED">REJECTED (खारिज)</option>
+              </select>
+            </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStatusBatch(null)}
-                  className="jm-btn-secondary flex-1 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="jm-btn-primary flex-1 cursor-pointer">
-                  Update Status
-                </button>
-              </div>
-            </form>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setStatusBatch(null)}
+                className="jm-btn-secondary flex-1 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="jm-btn-primary flex-1 cursor-pointer">
+                Update Status
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* ==================== 5-STEP BATCH CREATION WIZARD ==================== */}
@@ -1574,7 +1576,9 @@ export default function ProductionPage() {
 
       {/* ==================== TRACEABILITY MODAL ==================== */}
       <Modal id="traceability" isOpen={!!selectedTraceBatch} onClose={() => setSelectedTraceBatch(null)} title="Batch Traceability Graph">
-        <div className="space-y-3 text-xs">
+        {selectedTraceBatch && (
+          <div>
+            <div className="space-y-3 text-xs">
               <div className="p-3 rounded-xl bg-surface border border-border">
                 <div className="font-bold text-primary text-[11px] uppercase">1. Dal Procurement</div>
                 <div className="font-semibold text-sm text-ink mt-0.5">{selectedTraceBatch.dalLotNo}</div>
@@ -1615,6 +1619,8 @@ export default function ProductionPage() {
             >
               Close
             </button>
+          </div>
+        )}
       </Modal>
     </div>
   );
