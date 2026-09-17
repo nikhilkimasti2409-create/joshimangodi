@@ -58,7 +58,14 @@ export function sumDenominations(denoms: CashDenominations): {
   const n50Amount = (denoms.n50 || 0) * 50;
   const n20Amount = (denoms.n20 || 0) * 20;
   const n10Amount = (denoms.n10 || 0) * 10;
-  const coinsAmount = denoms.coins || 0;
+  const n5Amount = (denoms.n5 || 0) * 5;
+  const n2Amount = (denoms.n2 || 0) * 2;
+  const n1Amount = (denoms.n1 || 0) * 1;
+  const specificCoinsSum = n5Amount + n2Amount + n1Amount;
+  // If denoms.coins matches specificCoinsSum (from POS sync where coins stored the sum of n5+n2+n1),
+  // do not double count. Otherwise, denoms.coins represents additional loose coins.
+  const extraCoins = denoms.coins === specificCoinsSum ? 0 : (denoms.coins || 0);
+  const coinsAmount = specificCoinsSum + extraCoins;
 
   const total = round2(
     n500Amount + n200Amount + n100Amount + n50Amount + n20Amount + n10Amount + coinsAmount

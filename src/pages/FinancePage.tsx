@@ -22,8 +22,12 @@ import {
   Edit2,
   Coins,
   X,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { useAppState, store } from '../lib/store';
+import { sumDenominations } from '../lib/domain/financeMath';
+import { CASH_DENOM_CONFIG, formatDenominationBreakdown } from './POSPage';
 import { t } from '../lib/i18n';
 import { showToast } from '../components/common/Toast';
 import { toRFC4180CSV, downloadFile } from '../lib/csv';
@@ -53,6 +57,9 @@ export default function FinancePage() {
     n50: 0,
     n20: 0,
     n10: 0,
+    n5: 0,
+    n2: 0,
+    n1: 0,
     coins: 0,
   });
   const [drawerNotes, setDrawerNotes] = useState('');
@@ -64,11 +71,13 @@ export default function FinancePage() {
 
   // Today's Cash Calculations for Drawer
   const todayStr = new Date().toISOString().split('T')[0];
-  const todayCashSales = useMemo(() => {
-    return orders
-      .filter((o) => o.date === todayStr && !o.isVoid && o.paymentMethod === 'Cash')
-      .reduce((s, o) => s + (o.amountPaidInr || o.grandTotalInr), 0);
+  const todayCashOrders = useMemo(() => {
+    return orders.filter((o) => o.date === todayStr && !o.isVoid && o.paymentMethod === 'Cash');
   }, [orders, todayStr]);
+
+  const todayCashSales = useMemo(() => {
+    return todayCashOrders.reduce((s, o) => s + (o.amountPaidInr || o.grandTotalInr), 0);
+  }, [todayCashOrders]);
 
   const todayCashExpenses = useMemo(() => {
     return expenses
@@ -79,18 +88,42 @@ export default function FinancePage() {
   const expectedCashInDrawer = openingCashFloat + todayCashSales - todayCashExpenses;
 
   const countedCash = useMemo(() => {
-    return (
-      (denoms.n500 || 0) * 500 +
-      (denoms.n200 || 0) * 200 +
-      (denoms.n100 || 0) * 100 +
-      (denoms.n50 || 0) * 50 +
-      (denoms.n20 || 0) * 20 +
-      (denoms.n10 || 0) * 10 +
-      (denoms.coins || 0)
-    );
+    return sumDenominations(denoms).total;
   }, [denoms]);
 
   const drawerVariance = countedCash - expectedCashInDrawer;
+
+  const handleSyncPosCashDrawer = () => {
+    const synced = store.syncDrawerWithPosCash();
+    setDenoms({
+      n500: synced.n500 || 0,
+      n200: synced.n200 || 0,
+      n100: synced.n100 || 0,
+      n50: synced.n50 || 0,
+      n20: synced.n20 || 0,
+      n10: synced.n10 || 0,
+      n5: synced.n5 || 0,
+      n2: synced.n2 || 0,
+      n1: synced.n1 || 0,
+      coins: synced.coins || 0,
+    });
+    showToast('POS Cash Synced', `Imported denominations from today's POS cash register (${formatDenominationBreakdown(synced) || '₹0'}).`, 'success');
+  };
+
+  const handleResetDrawerDenoms = () => {
+    setDenoms({
+      n500: 0,
+      n200: 0,
+      n100: 0,
+      n50: 0,
+      n20: 0,
+      n10: 0,
+      n5: 0,
+      n2: 0,
+      n1: 0,
+      coins: 0,
+    });
+  };
 
   const handleLogExpense = (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,8 +185,10 @@ export default function FinancePage() {
     }
     const headers = ['Invoice Number', 'Invoice Date', 'Channel', 'Customer Name', 'GSTIN', 'Taxable Value', 'GST Rate %', 'CGST Amount', 'SGST Amount', 'Total Invoice Value', 'Payment Mode'];
     const rows = validOrders.map((o) => {
-      const taxable = Math.round((o.grandTotalInr - o.gstAmountInr) * 100) / 100;
-      const halfGst = Math.round((o.gstAmountInr / 2) * 100) / 100;
+      const grandTotal = o.grandTotalInr ?? 0;
+      const gstAmount = o.gstAmountInr ?? 0;
+      const taxable = Math.round((grandTotal - gstAmount) * 100) / 100;
+      const halfGst = Math.round((gstAmount / 2) * 100) / 100;
       return [
         o.billNo,
         o.date,
@@ -164,7 +199,7 @@ export default function FinancePage() {
         '5%',
         halfGst,
         halfGst,
-        o.grandTotalInr,
+        grandTotal,
         o.paymentMethod,
       ];
     });
@@ -404,32 +439,45 @@ export default function FinancePage() {
               </div>
 
               <div className="mt-4">
-                <h3 className="font-semibold text-xs text-ink mb-2.5 uppercase tracking-wider">
-                  Physical Notes & Coins Counting:
-                </h3>
+                <div className="flex items-center justify-between mb-2.5">
+                  <h3 className="font-semibold text-xs text-ink uppercase tracking-wider">
+                    Physical Notes & Coins Counting:
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSyncPosCashDrawer}
+                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 font-semibold rounded-lg bg-primary text-white hover:bg-primary-hover transition cursor-pointer"
+                      title="Sync denominations from today's POS cash sales"
+                    >
+                      <RefreshCw size={11} /> Sync POS Cash
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetDrawerDenoms}
+                      className="text-[11px] px-2 py-1 font-semibold rounded-lg border border-border text-ink-muted hover:bg-surface transition cursor-pointer"
+                      title="Reset counters"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  {[
-                    { label: '₹500 Notes', key: 'n500', val: 500 },
-                    { label: '₹200 Notes', key: 'n200', val: 200 },
-                    { label: '₹100 Notes', key: 'n100', val: 100 },
-                    { label: '₹50 Notes', key: 'n50', val: 50 },
-                    { label: '₹20 Notes', key: 'n20', val: 20 },
-                    { label: '₹10 Notes', key: 'n10', val: 10 },
-                  ].map((item) => (
+                  {CASH_DENOM_CONFIG.map((item) => (
                     <div key={item.key} className="flex items-center justify-between p-2 rounded-lg border border-border bg-white">
                       <span className="font-bold text-[11px]">{item.label}</span>
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
                           min="0"
-                          aria-label={`Count of ₹${item.val} notes`}
-                          value={(denoms as any)[item.key]}
+                          aria-label={`Count of ${item.label}`}
+                          value={(denoms as any)[item.key] || 0}
                           onChange={(e) => setDenoms({ ...denoms, [item.key]: Number(e.target.value) || 0 })}
                           className="w-12 text-center px-1 py-1 border border-border rounded text-xs font-bold"
                         />
                         <span className="w-12 text-right text-[11px] font-mono font-bold text-ink-muted">
-                          ₹{(denoms as any)[item.key] * item.val}
+                          ₹{((denoms as any)[item.key] || 0) * item.val}
                         </span>
                       </div>
                     </div>
@@ -437,12 +485,15 @@ export default function FinancePage() {
                 </div>
 
                 <div className="flex items-center justify-between p-2 mt-2 rounded-lg border border-border bg-white text-xs">
-                  <span className="font-bold text-[11px]">Coins Total (₹)</span>
+                  <div>
+                    <span className="font-bold text-[11px]">Other Loose Coins (₹)</span>
+                    <span className="text-[10px] text-ink-muted block">Miscellaneous change</span>
+                  </div>
                   <input
                     type="number"
                     min="0"
-                    aria-label="Coins total amount"
-                    value={denoms.coins}
+                    aria-label="Other coins total amount"
+                    value={denoms.coins || 0}
                     onChange={(e) => setDenoms({ ...denoms, coins: Number(e.target.value) || 0 })}
                     className="w-16 text-right px-2 py-1 border border-border rounded text-xs font-bold"
                   />
@@ -468,36 +519,89 @@ export default function FinancePage() {
               </div>
             </div>
 
-            <div className="lg:col-span-6 jm-card p-5 sm:p-6">
-              <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
-                <h2 className="text-base sm:text-lg font-bold text-ink">
-                  Drawer Closure Archive
-                </h2>
-                <span className="text-xs text-ink-muted">{reconciliations.length} records</span>
+            <div className="lg:col-span-6 space-y-5">
+              {/* Today's Counter POS Cash Inflows */}
+              <div className="jm-card p-5 sm:p-6">
+                <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-ink flex items-center gap-2">
+                      Today's POS Counter Cash Inflows
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-success-soft text-success border border-success/30">
+                        {todayCashOrders.length} Cash Bills
+                      </span>
+                    </h2>
+                    <p className="text-xs text-ink-muted">
+                      Live register audit of bills and recorded cash denominations
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-success">
+                    +₹{todayCashSales.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                  {todayCashOrders.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-ink-muted">
+                      No cash bills recorded at POS today yet.
+                    </div>
+                  ) : (
+                    todayCashOrders.map((order) => {
+                      const denomText = formatDenominationBreakdown(order.denominations);
+                      return (
+                        <div key={order.id} className="p-3 rounded-xl border border-border bg-surface text-xs space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <span className="font-mono font-bold text-ink">{order.billNo}</span>
+                            <span className="font-bold text-success">₹{(order.amountPaidInr || order.grandTotalInr).toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between text-ink-muted text-[11px]">
+                            <span>Customer: <strong className="text-ink">{order.customerName}</strong></span>
+                            <span>{order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'}</span>
+                          </div>
+                          <div className="pt-1 border-t border-border flex items-start gap-1.5">
+                            <span className="font-semibold text-ink-muted shrink-0 text-[10px] uppercase">Notes/Coins:</span>
+                            <span className="font-mono font-bold text-ink-light text-[11px]">
+                              {denomText || 'Standard Cash'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
-                {reconciliations.length === 0 ? (
-                  <div className="py-12 text-center text-xs text-ink-muted">
-                    No past drawer closures recorded yet.
-                  </div>
-                ) : (
-                  reconciliations.map((rec) => (
-                    <div key={rec.id} className="p-3.5 rounded-xl border border-border bg-surface space-y-1 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-ink">{rec.date}</span>
-                        <StatusBadge variant={Math.abs(rec.varianceInr) === 0 ? 'success' : 'danger'} label={`Variance: ₹${rec.varianceInr}`} />
-                      </div>
-                      <div className="flex justify-between text-ink-muted">
-                        <span>Expected: ₹{rec.expectedCashInr}</span>
-                        <span>Counted: ₹{rec.countedCashInr}</span>
-                      </div>
-                      <div className="text-[11px] text-ink-muted pt-1 border-t border-border">
-                        Next Day Float: ₹{rec.nextDayFloatInr} · Operator: {rec.operator}
-                      </div>
+              {/* Drawer Closure Archive */}
+              <div className="jm-card p-5 sm:p-6">
+                <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+                  <h2 className="text-base sm:text-lg font-bold text-ink">
+                    Drawer Closure Archive
+                  </h2>
+                  <span className="text-xs text-ink-muted">{reconciliations.length} records</span>
+                </div>
+
+                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                  {reconciliations.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-ink-muted">
+                      No past drawer closures recorded yet.
                     </div>
-                  ))
-                )}
+                  ) : (
+                    reconciliations.map((rec) => (
+                      <div key={rec.id} className="p-3.5 rounded-xl border border-border bg-surface space-y-1 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-ink">{rec.date}</span>
+                          <StatusBadge variant={Math.abs(rec.varianceInr) === 0 ? 'success' : 'danger'} label={`Variance: ₹${rec.varianceInr}`} />
+                        </div>
+                        <div className="flex justify-between text-ink-muted">
+                          <span>Expected: ₹{rec.expectedCashInr}</span>
+                          <span>Counted: ₹{rec.countedCashInr}</span>
+                        </div>
+                        <div className="text-[11px] text-ink-muted pt-1 border-t border-border">
+                          Next Day Float: ₹{rec.nextDayFloatInr} · Operator: {rec.operator}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -799,7 +903,7 @@ export default function FinancePage() {
                   value={expAmount}
                   onChange={(e) => setExpAmount(e.target.value)}
                   placeholder="e.g. 500"
-                  className="jm-inputtext-danger"
+                  className="jm-input text-danger"
                 />
               </div>
 
@@ -948,7 +1052,7 @@ export default function FinancePage() {
                   value={newFloatAmount}
                   onChange={(e) => setNewFloatAmount(e.target.value)}
                   placeholder="e.g. 2000"
-                  className="jm-inputtext-ink"
+                  className="jm-input text-ink"
                 />
               </div>
 

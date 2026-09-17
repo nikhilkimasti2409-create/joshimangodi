@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react';
+import { isValidElement, type ElementType, type ReactNode } from 'react';
 
 interface StatusBadgeProps {
   /** The status variant determines color */
@@ -6,7 +6,7 @@ interface StatusBadgeProps {
   status?: 'success' | 'warning' | 'danger' | 'info' | 'neutral' | string;
   /** Text label — always shown alongside color for accessibility */
   label: string;
-  /** Optional custom icon */
+  /** Optional custom icon (component or element) */
   icon?: ElementType | ReactNode;
   /** Optional small size */
   size?: 'sm' | 'md';
@@ -20,6 +20,13 @@ const variantStyles: Record<string, string> = {
   neutral: 'bg-surface text-ink-muted',
 };
 
+function renderBadgeIcon(icon: ElementType | ReactNode, size: number) {
+  if (!icon) return null;
+  if (isValidElement(icon)) return icon;
+  const Component = icon as any;
+  return <Component size={size} aria-hidden="true" />;
+}
+
 /**
  * Status badge that always uses color + text label together.
  * Never color alone — per accessibility requirements.
@@ -28,7 +35,7 @@ export default function StatusBadge({
   variant,
   status,
   label,
-  icon: Icon,
+  icon,
   size = 'sm',
 }: StatusBadgeProps) {
   const v = (variant || status || 'neutral') as 'success' | 'warning' | 'danger' | 'info' | 'neutral';
@@ -43,8 +50,8 @@ export default function StatusBadge({
     <span
       className={`inline-flex items-center gap-1 font-medium rounded-md ${sizeClasses} ${style}`}
     >
-      {Icon ? (
-        typeof Icon === 'function' ? <Icon size={12} aria-hidden="true" /> : Icon
+      {icon ? (
+        renderBadgeIcon(icon, 12)
       ) : (
         <span
           className={`w-1.5 h-1.5 rounded-full ${

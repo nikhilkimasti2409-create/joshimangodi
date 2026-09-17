@@ -3,6 +3,7 @@ import type {
   ProductSKU,
   Customer,
   CustomerPayment,
+  PaymentMethod,
   Order,
   OrderLineItem,
   CartItem,
@@ -329,11 +330,23 @@ export interface AppState {
   activeCustomer: Customer | null;
   cart: CartItem[];
   openingCashFloat: number;
+  currentCashDrawerDenominations?: CashDenominations;
 }
 
 function loadState(): AppState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      // Fallback migration from previous version keys
+      for (const oldKey of ['joshi_mangodi_ops_state_v6', 'joshi_mangodi_ops_state_v5', 'joshi_mangodi_ops_state']) {
+        const oldData = localStorage.getItem(oldKey);
+        if (oldData) {
+          raw = oldData;
+          break;
+        }
+      }
+    }
+
     if (raw) {
       const parsed = JSON.parse(raw);
       const loadedChannel: SalesChannel = parsed.activeChannel || 'RETAIL';
@@ -358,24 +371,63 @@ function loadState(): AppState {
         };
       }).filter(Boolean);
 
+      const loadedBatches: ProductionBatch[] = (Array.isArray(parsed.productionBatches) ? parsed.productionBatches : INITIAL_BATCHES).map((b: ProductionBatch) => ({
+        ...b,
+        labourEntries: Array.isArray(b.labourEntries) ? b.labourEntries : [],
+        outputLots: (Array.isArray(b.outputLots) ? b.outputLots : []).map((ol) => ({
+          ...ol,
+          packagesRemaining: ol.packagesRemaining !== undefined ? Number(ol.packagesRemaining) : (Number(ol.packagesCount) || 0),
+        })),
+      }));
+
+      const loadedWorkers: Worker[] = (Array.isArray(parsed.workers) ? parsed.workers : INITIAL_WORKERS).map((w: Worker) => ({
+        ...w,
+        totalEarnedInr: Number(w.totalEarnedInr) || 0,
+        totalKgProduced: Number(w.totalKgProduced) || 0,
+        pieceRatePerKgInr: Number(w.pieceRatePerKgInr) || 25,
+      }));
+
+      const loadedDalLots: DalLot[] = (Array.isArray(parsed.dalLots) ? parsed.dalLots : INITIAL_DAL_LOTS).map((dl: DalLot) => ({
+        ...dl,
+        availableWeightKg: dl.availableWeightKg !== undefined ? Number(dl.availableWeightKg) : (Number(dl.initialWeightKg) || 0),
+        ratePerKgInr: Number(dl.ratePerKgInr) || 85,
+      }));
+
+      const loadedOrders: Order[] = (Array.isArray(parsed.orders) ? parsed.orders : (historicalOrdersData as Order[])).map((o: Order) => ({
+        ...o,
+        items: Array.isArray(o.items) ? o.items : [],
+      }));
+
       return {
-        products: parsed.products || INITIAL_PRODUCTS,
-        customers: parsed.customers || INITIAL_CUSTOMERS,
-        customerPayments: parsed.customerPayments || INITIAL_PAYMENTS,
-        orders: parsed.orders || (historicalOrdersData as Order[]),
-        dalLots: parsed.dalLots || INITIAL_DAL_LOTS,
-        workers: parsed.workers || INITIAL_WORKERS,
-        productionBatches: parsed.productionBatches || INITIAL_BATCHES,
-        rawMaterials: parsed.rawMaterials || INITIAL_RAW_MATERIALS,
-        stockMovements: parsed.stockMovements || INITIAL_STOCK_MOVEMENTS,
-        expenses: parsed.expenses || INITIAL_EXPENSES,
-        reconciliations: parsed.reconciliations || [],
-        dispatchTickets: parsed.dispatchTickets || INITIAL_DISPATCHES,
-        inboundShipments: parsed.inboundShipments || INITIAL_INBOUND,
+        products: Array.isArray(parsed.products) ? parsed.products : INITIAL_PRODUCTS,
+        customers: Array.isArray(parsed.customers) ? parsed.customers : INITIAL_CUSTOMERS,
+        customerPayments: Array.isArray(parsed.customerPayments) ? parsed.customerPayments : INITIAL_PAYMENTS,
+        orders: loadedOrders,
+        dalLots: loadedDalLots,
+        workers: loadedWorkers,
+        productionBatches: loadedBatches,
+        rawMaterials: Array.isArray(parsed.rawMaterials) ? parsed.rawMaterials : INITIAL_RAW_MATERIALS,
+        stockMovements: Array.isArray(parsed.stockMovements) ? parsed.stockMovements : INITIAL_STOCK_MOVEMENTS,
+        expenses: Array.isArray(parsed.expenses) ? parsed.expenses : INITIAL_EXPENSES,
+        reconciliations: Array.isArray(parsed.reconciliations) ? parsed.reconciliations : [],
+        dispatchTickets: Array.isArray(parsed.dispatchTickets) ? parsed.dispatchTickets : INITIAL_DISPATCHES,
+        inboundShipments: Array.isArray(parsed.inboundShipments) ? parsed.inboundShipments : INITIAL_INBOUND,
         activeChannel: loadedChannel,
         activeCustomer: loadedCustomer,
         cart: sanitizedCart,
-        openingCashFloat: parsed.openingCashFloat ?? 0,
+        openingCashFloat: Number(parsed.openingCashFloat) || 0,
+        currentCashDrawerDenominations: parsed.currentCashDrawerDenominations || {
+          n500: 0,
+          n200: 0,
+          n100: 0,
+          n50: 0,
+          n20: 0,
+          n10: 0,
+          n5: 0,
+          n2: 0,
+          n1: 0,
+          coins: 0,
+        },
       };
     }
   } catch (e) {
@@ -386,7 +438,7 @@ function loadState(): AppState {
     products: INITIAL_PRODUCTS,
     customers: INITIAL_CUSTOMERS,
     customerPayments: INITIAL_PAYMENTS,
-    orders: historicalOrdersData as Order[],
+    orders: (historicalOrdersData as Order[]).map((o) => ({ ...o, items: Array.isArray(o.items) ? o.items : [] })),
     dalLots: INITIAL_DAL_LOTS,
     workers: INITIAL_WORKERS,
     productionBatches: INITIAL_BATCHES,
@@ -400,6 +452,18 @@ function loadState(): AppState {
     activeCustomer: null,
     cart: [],
     openingCashFloat: 0,
+    currentCashDrawerDenominations: {
+      n500: 0,
+      n200: 0,
+      n100: 0,
+      n50: 0,
+      n20: 0,
+      n10: 0,
+      n5: 0,
+      n2: 0,
+      n1: 0,
+      coins: 0,
+    },
   };
 }
 
@@ -407,8 +471,25 @@ let globalState = loadState();
 const stateListeners: Array<(state: AppState) => void> = [];
 
 function emitChange() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
-  stateListeners.forEach((listener) => listener({ ...globalState }));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
+  } catch (err) {
+    console.warn('Failed to persist state to localStorage (quota exceeded or disabled):', err);
+  }
+  const snapshot: AppState = {
+    ...globalState,
+    cart: [...globalState.cart],
+    products: [...globalState.products],
+    orders: [...globalState.orders],
+    productionBatches: [...globalState.productionBatches],
+    stockMovements: [...globalState.stockMovements],
+    rawMaterials: [...globalState.rawMaterials],
+    dalLots: [...globalState.dalLots],
+    workers: [...globalState.workers],
+    expenses: [...globalState.expenses],
+    reconciliations: [...globalState.reconciliations],
+  };
+  stateListeners.forEach((listener) => listener(snapshot));
 }
 
 export function useAppState() {
@@ -536,7 +617,8 @@ export const store = {
 
   // Cart operations
   addToCart: (sku: ProductSKU, quantity: number = 1) => {
-    const existing = globalState.cart.find((item) => item.sku.id === sku.id);
+    const existingIndex = globalState.cart.findIndex((item) => item.sku.id === sku.id);
+    const existing = existingIndex >= 0 ? globalState.cart[existingIndex] : null;
     const targetQty = (existing?.quantity || 0) + quantity;
     const priceRes = resolveSKUPrice(
       sku,
@@ -547,18 +629,25 @@ export const store = {
     const unitPrice = priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(sku.retailPriceInr) || 0);
     const total = priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * targetQty;
 
-    if (existing) {
-      existing.quantity = targetQty;
-      existing.unitPriceInr = unitPrice;
-      existing.totalInr = total;
+    let newCart: CartItem[];
+    if (existingIndex >= 0) {
+      newCart = globalState.cart.map((item, idx) =>
+        idx === existingIndex
+          ? { ...item, quantity: targetQty, unitPriceInr: unitPrice, totalInr: total }
+          : item
+      );
     } else {
-      globalState.cart.push({
-        sku,
-        quantity: targetQty,
-        unitPriceInr: unitPrice,
-        totalInr: total,
-      });
+      newCart = [
+        ...globalState.cart,
+        {
+          sku,
+          quantity: targetQty,
+          unitPriceInr: unitPrice,
+          totalInr: total,
+        },
+      ];
     }
+    globalState.cart = newCart;
     emitChange();
   },
 
@@ -566,20 +655,25 @@ export const store = {
     if (quantity <= 0) {
       globalState.cart = globalState.cart.filter((item) => item.sku.id !== skuId);
     } else {
-      const item = globalState.cart.find((i) => i.sku.id === skuId);
-      if (item) {
-        const priceRes = resolveSKUPrice(
-          item.sku,
-          quantity,
-          globalState.activeChannel,
-          globalState.activeCustomer
-        );
-        const unitPrice = priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(item.sku.retailPriceInr) || 0);
-        const total = priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * quantity;
-        item.quantity = quantity;
-        item.unitPriceInr = unitPrice;
-        item.totalInr = total;
-      }
+      globalState.cart = globalState.cart.map((item) => {
+        if (item.sku.id === skuId) {
+          const priceRes = resolveSKUPrice(
+            item.sku,
+            quantity,
+            globalState.activeChannel,
+            globalState.activeCustomer
+          );
+          const unitPrice = priceRes.unitPriceInr > 0 ? priceRes.unitPriceInr : (Number(item.sku.retailPriceInr) || 0);
+          const total = priceRes.totalInr > 0 ? priceRes.totalInr : unitPrice * quantity;
+          return {
+            ...item,
+            quantity,
+            unitPriceInr: unitPrice,
+            totalInr: total,
+          };
+        }
+        return item;
+      });
     }
     emitChange();
   },
@@ -600,6 +694,7 @@ export const store = {
     amountPaidInr: number;
     discountInr: number;
     notes?: string;
+    denominations?: CashDenominations;
   }): Order => {
     const today = new Date().toISOString().split('T')[0];
     const billSequence = globalState.orders.length + 1;
@@ -655,36 +750,99 @@ export const store = {
       amountPaidInr: summary.amountPaidInr,
       creditAddedInr: summary.creditAddedInr,
       changeDueInr: summary.changeDueInr,
+      denominations: orderPayload.denominations,
       notes: orderPayload.notes,
       date: today,
       createdAt: new Date().toISOString(),
     };
 
     // 1. Save order
-    globalState.orders.unshift(newOrder);
+    globalState.orders = [newOrder, ...globalState.orders];
 
-    // 2. Decrement Finished Goods stock and record movement
+    // 2. Decrement Finished Goods stock and production inventory (batch output lots), and record movement
     for (const item of lineItems) {
       const prod = globalState.products.find((p) => p.id === item.skuId);
       if (prod) {
         prod.currentStockUnits = Math.max(0, prod.currentStockUnits - item.quantity);
       }
-      globalState.stockMovements.unshift({
-        id: `sm-${Date.now()}-${item.skuId}`,
-        date: today,
-        itemId: item.skuId,
-        itemName: item.skuName,
-        itemType: 'FINISHED_GOODS',
-        movementType: 'POS_SALE',
-        qtySigned: -item.quantity,
-        unit: 'PCS',
-        referenceNo: billNo,
-        operator: 'Anjali B. (Owner)',
-        createdAt: new Date().toISOString(),
-      });
+
+      // Deduct from Production Inventory (Batches output lots, FIFO)
+      let qtyToDeduct = item.quantity;
+      const assignedLots: string[] = [];
+
+      const releasedBatches = globalState.productionBatches
+        .filter((b) => b.status === 'RELEASED' && b.outputLots && b.outputLots.length > 0)
+        .sort((a, b) => (a.releaseDate || a.createdAt).localeCompare(b.releaseDate || b.createdAt));
+
+      for (const b of releasedBatches) {
+        if (qtyToDeduct <= 0) break;
+        for (const ol of b.outputLots) {
+          if (ol.skuId === item.skuId) {
+            const rem = ol.packagesRemaining !== undefined ? ol.packagesRemaining : ol.packagesCount;
+            if (rem > 0) {
+              const deduct = Math.min(qtyToDeduct, rem);
+              ol.packagesRemaining = rem - deduct;
+              qtyToDeduct -= deduct;
+              assignedLots.push(`${b.batchCode} (${ol.lotNumber}: ${deduct} pk)`);
+              if (qtyToDeduct <= 0) break;
+            }
+          }
+        }
+      }
+
+      if (assignedLots.length > 0) {
+        item.batchLotId = assignedLots.join('; ');
+      }
+
+      globalState.stockMovements = [
+        {
+          id: `sm-${Date.now()}-${item.skuId}`,
+          date: today,
+          itemId: item.skuId,
+          itemName: item.skuName,
+          itemType: 'FINISHED_GOODS',
+          movementType: 'POS_SALE',
+          qtySigned: -item.quantity,
+          unit: 'PCS',
+          referenceNo: billNo,
+          reason: item.batchLotId ? `POS Sale · Lot: ${item.batchLotId}` : `POS Sale · Bill #${billNo}`,
+          operator: 'Anjali B. (Owner)',
+          createdAt: new Date().toISOString(),
+        },
+        ...globalState.stockMovements,
+      ];
     }
 
-    // 3. Update customer ledger & lifetime metrics
+    // 3. Record Cash Amount and Denominations in Finance Module's Cash Drawer
+    if (orderPayload.paymentMethod === 'Cash' && orderPayload.denominations) {
+      const curDenoms = globalState.currentCashDrawerDenominations || {
+        n500: 0,
+        n200: 0,
+        n100: 0,
+        n50: 0,
+        n20: 0,
+        n10: 0,
+        n5: 0,
+        n2: 0,
+        n1: 0,
+        coins: 0,
+      };
+
+      globalState.currentCashDrawerDenominations = {
+        n500: (curDenoms.n500 || 0) + (orderPayload.denominations.n500 || 0),
+        n200: (curDenoms.n200 || 0) + (orderPayload.denominations.n200 || 0),
+        n100: (curDenoms.n100 || 0) + (orderPayload.denominations.n100 || 0),
+        n50: (curDenoms.n50 || 0) + (orderPayload.denominations.n50 || 0),
+        n20: (curDenoms.n20 || 0) + (orderPayload.denominations.n20 || 0),
+        n10: (curDenoms.n10 || 0) + (orderPayload.denominations.n10 || 0),
+        n5: (curDenoms.n5 || 0) + (orderPayload.denominations.n5 || 0),
+        n2: (curDenoms.n2 || 0) + (orderPayload.denominations.n2 || 0),
+        n1: (curDenoms.n1 || 0) + (orderPayload.denominations.n1 || 0),
+        coins: (curDenoms.coins || 0) + (orderPayload.denominations.coins || 0),
+      };
+    }
+
+    // 4. Update customer ledger & lifetime metrics
     if (globalState.activeCustomer) {
       const cust = globalState.customers.find((c) => c.id === globalState.activeCustomer?.id);
       if (cust) {
@@ -697,7 +855,7 @@ export const store = {
       }
     }
 
-    // 4. Clear cart
+    // 5. Clear cart
     globalState.cart = [];
     emitChange();
     return newOrder;
@@ -714,20 +872,37 @@ export const store = {
       if (prod) {
         prod.currentStockUnits += item.quantity;
       }
-      globalState.stockMovements.unshift({
-        id: `sm-void-${Date.now()}-${item.skuId}`,
-        date: new Date().toISOString().split('T')[0],
-        itemId: item.skuId,
-        itemName: item.skuName,
-        itemType: 'FINISHED_GOODS',
-        movementType: 'VOID_RESTOCK',
-        qtySigned: item.quantity,
-        unit: 'PCS',
-        referenceNo: `VOID:${ord.billNo}`,
-        reason,
-        operator: 'Anjali B. (Owner)',
-        createdAt: new Date().toISOString(),
-      });
+
+      // Restore to production batch output lots if recorded
+      if (item.batchLotId) {
+        for (const b of globalState.productionBatches) {
+          if (item.batchLotId.includes(b.batchCode)) {
+            for (const ol of b.outputLots) {
+              if (ol.skuId === item.skuId) {
+                ol.packagesRemaining = Math.min(ol.packagesCount, (ol.packagesRemaining ?? 0) + item.quantity);
+              }
+            }
+          }
+        }
+      }
+
+      globalState.stockMovements = [
+        {
+          id: `sm-void-${Date.now()}-${item.skuId}`,
+          date: new Date().toISOString().split('T')[0],
+          itemId: item.skuId,
+          itemName: item.skuName,
+          itemType: 'FINISHED_GOODS',
+          movementType: 'VOID_RESTOCK',
+          qtySigned: item.quantity,
+          unit: 'PCS',
+          referenceNo: `VOID:${ord.billNo}`,
+          reason,
+          operator: 'Anjali B. (Owner)',
+          createdAt: new Date().toISOString(),
+        },
+        ...globalState.stockMovements,
+      ];
     }
 
     if (ord.customerId && ord.creditAddedInr > 0) {
@@ -739,6 +914,121 @@ export const store = {
     }
 
     emitChange();
+  },
+
+  updateOrder: (orderId: string, fields: Partial<Order>) => {
+    const idx = globalState.orders.findIndex((o) => o.id === orderId);
+    if (idx >= 0) {
+      globalState.orders[idx] = { ...globalState.orders[idx], ...fields };
+      emitChange();
+    }
+  },
+
+  createWholesaleOrder: (params: {
+    wholesaler: Customer;
+    items: Array<{ sku: ProductSKU; quantity: number; unitPriceInr: number }>;
+    deliveryTimeframe: string;
+    paymentMethod: PaymentMethod;
+    amountPaidInr?: number;
+    notes?: string;
+  }): Order => {
+    const today = new Date().toISOString().split('T')[0];
+    const billSequence = globalState.orders.length + 1;
+    const billNo = `JM-${today.replace(/-/g, '').slice(2)}-${String(billSequence).padStart(3, '0')}`;
+
+    const customerGstin = params.wholesaler.gstin || undefined;
+    const lineItems: OrderLineItem[] = params.items.map((it) => {
+      const total = round2(it.unitPriceInr * it.quantity);
+      const tax = calculateTaxBreakdown(total, it.sku.gstRate || 5, customerGstin);
+      return {
+        skuId: it.sku.id,
+        skuName: it.sku.name,
+        skuNameHindi: it.sku.nameHindi,
+        shape: it.sku.shape,
+        packetSizeGrams: it.sku.packetSizeGrams,
+        quantity: it.quantity,
+        unitPriceInr: it.unitPriceInr,
+        totalInr: total,
+        gstRate: it.sku.gstRate || 5,
+        gstAmount: tax.totalGstInr,
+      };
+    });
+
+    const summary = calculateOrderFinancials(
+      lineItems,
+      0,
+      params.amountPaidInr || 0,
+      params.paymentMethod,
+      customerGstin
+    );
+
+    const fullNotes = `Delivery Timeframe: ${params.deliveryTimeframe}${params.notes ? ' | ' + params.notes : ''}`;
+
+    const newOrder: Order = {
+      id: `ord-${Date.now()}`,
+      billNo,
+      channel: 'WHOLESALE_T1',
+      customerId: params.wholesaler.id,
+      customerName: params.wholesaler.name,
+      customerPhone: params.wholesaler.phone,
+      customerGstin: params.wholesaler.gstin || null,
+      items: lineItems,
+      subtotalInr: summary.grossSubtotalInr,
+      discountInr: 0,
+      gstAmountInr: summary.totalGstInr,
+      grandTotalInr: summary.grandTotalInr,
+      paymentMethod: params.paymentMethod,
+      amountPaidInr: summary.amountPaidInr,
+      creditAddedInr: summary.creditAddedInr,
+      changeDueInr: 0,
+      notes: fullNotes,
+      date: today,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Deduct inventory stock
+    for (const it of params.items) {
+      const prod = globalState.products.find((p) => p.id === it.sku.id);
+      if (prod) {
+        prod.currentStockUnits = Math.max(0, prod.currentStockUnits - it.quantity);
+      }
+    }
+
+    // Record stock movements
+    for (const it of lineItems) {
+      globalState.stockMovements = [
+        {
+          id: `sm-ws-${Date.now()}-${it.skuId}`,
+          date: today,
+          itemId: it.skuId,
+          itemName: it.skuName,
+          itemType: 'FINISHED_GOODS',
+          movementType: 'POS_SALE',
+          qtySigned: -it.quantity,
+          unit: 'PCS',
+          referenceNo: billNo,
+          reason: `Wholesale Dispatch to ${params.wholesaler.name} · Bill #${billNo}`,
+          operator: 'Anjali B. (Owner)',
+          createdAt: new Date().toISOString(),
+        },
+        ...globalState.stockMovements,
+      ];
+    }
+
+    // Update wholesaler ledger & metrics
+    const cust = globalState.customers.find((c) => c.id === params.wholesaler.id);
+    if (cust) {
+      if (summary.creditAddedInr > 0) {
+        cust.totalOutstandingInr = round2(cust.totalOutstandingInr + summary.creditAddedInr);
+      }
+      cust.totalOrdersCount = (cust.totalOrdersCount || 0) + 1;
+      cust.lifetimeValueInr = round2((cust.lifetimeValueInr || 0) + summary.grandTotalInr);
+      cust.lastOrderDate = today;
+    }
+
+    globalState.orders.unshift(newOrder);
+    emitChange();
+    return newOrder;
   },
 
   // Customers
@@ -977,6 +1267,7 @@ export const store = {
         skuName: prod?.name || 'Mangodi Pack',
         packetSizeGrams: pkgGrams,
         packagesCount: ol.packagesCount,
+        packagesRemaining: ol.packagesCount,
         lotNumber,
       };
     });
@@ -1372,11 +1663,13 @@ export const store = {
   getDemandForecast: (productSkuId?: string) => {
     const dailyMap: Record<string, number> = {};
     for (const ord of globalState.orders) {
-      if (ord.isVoid) continue;
-      const day = ord.date;
+      if (!ord || ord.isVoid) continue;
+      const day = ord.date || new Date().toISOString().split('T')[0];
+      if (!Array.isArray(ord.items)) continue;
       for (const item of ord.items) {
+        if (!item) continue;
         if (!productSkuId || item.skuId === productSkuId) {
-          const itemKg = (item.quantity * (item.packetSizeGrams || 500)) / 1000;
+          const itemKg = ((Number(item.quantity) || 0) * (Number(item.packetSizeGrams) || 500)) / 1000;
           dailyMap[day] = (dailyMap[day] || 0) + itemKg;
         }
       }
@@ -1447,5 +1740,47 @@ export const store = {
 
   exportTallyXmlString: () => {
     return generateTallySalesXml(globalState.orders);
+  },
+
+  getLowStockProducts: () => {
+    return globalState.products.filter(
+      (p) => p.currentStockUnits <= p.reorderPointUnits
+    );
+  },
+
+  syncDrawerWithPosCash: () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayCashOrders = globalState.orders.filter(
+      (o) => o.date === today && !o.isVoid && o.paymentMethod === 'Cash' && o.denominations
+    );
+    const aggregated: CashDenominations = {
+      n500: 0,
+      n200: 0,
+      n100: 0,
+      n50: 0,
+      n20: 0,
+      n10: 0,
+      n5: 0,
+      n2: 0,
+      n1: 0,
+      coins: 0,
+    };
+    for (const o of todayCashOrders) {
+      if (o.denominations) {
+        aggregated.n500 += o.denominations.n500 || 0;
+        aggregated.n200 += o.denominations.n200 || 0;
+        aggregated.n100 += o.denominations.n100 || 0;
+        aggregated.n50 += o.denominations.n50 || 0;
+        aggregated.n20 += o.denominations.n20 || 0;
+        aggregated.n10 += o.denominations.n10 || 0;
+        aggregated.n5 = (aggregated.n5 || 0) + (o.denominations.n5 || 0);
+        aggregated.n2 = (aggregated.n2 || 0) + (o.denominations.n2 || 0);
+        aggregated.n1 = (aggregated.n1 || 0) + (o.denominations.n1 || 0);
+        aggregated.coins += o.denominations.coins || 0;
+      }
+    }
+    globalState.currentCashDrawerDenominations = aggregated;
+    emitChange();
+    return aggregated;
   },
 };

@@ -88,6 +88,7 @@ export interface Order {
   amountPaidInr: number;
   creditAddedInr: number;
   changeDueInr: number;
+  denominations?: CashDenominations;
   notes?: string;
   date: string;
   createdAt: string;
@@ -168,6 +169,7 @@ export interface ProductionBatch {
     skuName: string;
     packetSizeGrams: number;
     packagesCount: number;
+    packagesRemaining?: number;
     lotNumber: string;
   }[];
   createdAt: string;
@@ -224,6 +226,9 @@ export interface CashDenominations {
   n50: number;
   n20: number;
   n10: number;
+  n5?: number;
+  n2?: number;
+  n1?: number;
   coins: number;
 }
 

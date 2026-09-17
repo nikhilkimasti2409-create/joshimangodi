@@ -33,10 +33,10 @@ import {
   calculateDynamicCOGS,
   calculateBOMBackflushDeductions,
 } from '../lib/domain';
-import type { ProductionBatch, Worker, DalLot, BatchStatus } from '../types';
+import type { ProductionBatch, Worker, DalLot, BatchStatus, ProductSKU } from '../types';
 
 export default function ProductionPage() {
-  const { productionBatches, dalLots, workers, products, rawMaterials } = useAppState();
+  const { productionBatches, dalLots, workers, products, rawMaterials, orders } = useAppState();
 
   const [activeTab, setActiveTab] = useState<'BATCHES' | 'WORKERS' | 'DAL_LOTS' | 'FORECAST_MPS'>('BATCHES');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -294,6 +294,11 @@ export default function ProductionPage() {
     }
   };
 
+  // Low Stock & Reorder Triggers
+  const lowStockProducts = useMemo(() => {
+    return products.filter((p) => p.currentStockUnits <= p.reorderPointUnits);
+  }, [products]);
+
   // Batch Wizard Handlers
   const handleOpenBatchWizard = () => {
     setWizardStep(1);
@@ -307,6 +312,38 @@ export default function ProductionPage() {
     });
     setWorkerKgs(initialKgs);
     setIsWizardOpen(true);
+  };
+
+  const handleStartReplenishmentBatch = (p: ProductSKU) => {
+    setWizardStep(1);
+    setProdType(p.name);
+    setShape(p.shape as any);
+    if (dalLots.length > 0) {
+      setSelectedDalLotId(dalLots[0].id);
+    }
+    // Pre-initialize worker kgs
+    const initialKgs: { [id: string]: string } = {};
+    workers.forEach((w) => {
+      initialKgs[w.id] = '';
+    });
+    setWorkerKgs(initialKgs);
+
+    const deficit = Math.max(20, p.reorderPointUnits * 2 - p.currentStockUnits);
+    if (p.packetSizeGrams === 250) {
+      setPack250Count(String(deficit));
+      setPack500Count('0');
+      setPack1000Count('0');
+    } else if (p.packetSizeGrams === 500) {
+      setPack250Count('0');
+      setPack500Count(String(deficit));
+      setPack1000Count('0');
+    } else {
+      setPack250Count('0');
+      setPack500Count('0');
+      setPack1000Count(String(deficit));
+    }
+    setIsWizardOpen(true);
+    showToast('Replenishment Initiated', `Batch wizard configured for ${p.name}. Recommended production: ${deficit} units.`, 'info');
   };
 
   const handleCreateBatch = () => {
@@ -505,7 +542,7 @@ export default function ProductionPage() {
                 </div>
                 <div className="text-xl sm:text-2xl font-bold text-primary mt-1.5">
                   {productionBatches.length > 0
-                    ? `${(productionBatches.reduce((a, b) => a + b.shrinkagePct, 0) / productionBatches.length).toFixed(1)}%`
+                    ? `${(productionBatches.reduce((a, b) => a + (Number(b.shrinkagePct) || 0), 0) / productionBatches.length).toFixed(1)}%`
                     : '55.8%'}
                 </div>
                 <div className="text-[11px] sm:text-[11px] text-ink-muted font-semibold mt-0.5">
@@ -535,12 +572,60 @@ export default function ProductionPage() {
                   {dalLots.length}
                 </div>
                 <div className="text-[11px] sm:text-[11px] text-ink-muted font-semibold mt-0.5">
-                  {dalLots.reduce((acc, l) => acc + l.availableWeightKg, 0)} kg available
+                  {(dalLots || []).reduce((acc, l) => acc + (Number(l.availableWeightKg) || 0), 0)} kg available
                 </div>
               </div>
             </div>
-
             )}
+
+            {/* Low Stock Reorder & Replenishment Queue */}
+            {lowStockProducts.length > 0 && (
+              <div className="p-4 rounded-xl bg-warning-soft border border-warning">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-warning text-white mt-0.5">
+                      <AlertTriangle size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-ink flex items-center gap-2">
+                        Production Reorder & Stock Replenishment Alert
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-warning text-white">
+                          {lowStockProducts.length} Items Below Safe ROP
+                        </span>
+                      </h4>
+                      <p className="text-xs text-ink-muted mt-0.5">
+                        POS counter billing and sales orders have drawn inventory below safety reorder points. Prepare production batches to replenish finished goods.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-warning/20">
+                  {lowStockProducts.map((p) => {
+                    const deficit = Math.max(0, p.reorderPointUnits - p.currentStockUnits);
+                    return (
+                      <div key={p.id} className="p-2.5 rounded-lg bg-white border border-border flex items-center justify-between shadow-2xs">
+                        <div className="min-w-0 pr-2">
+                          <div className="font-bold text-xs text-ink truncate">{p.name}</div>
+                          <div className="text-[11px] text-danger font-semibold">
+                            {p.currentStockUnits} left (ROP: {p.reorderPointUnits}) • Deficit: -{deficit}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleStartReplenishmentBatch(p)}
+                          className="jm-btn-primary !text-[11px] !py-1 !px-2.5 whitespace-nowrap flex items-center gap-1 cursor-pointer shrink-0"
+                          title="Draft production batch for this SKU"
+                        >
+                          <Sparkles size={12} />
+                          <span>+ Produce</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Batches Table or Empty State */}
             <div className="jm-card p-5 sm:p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-border pb-3 mb-4">
@@ -617,11 +702,11 @@ export default function ProductionPage() {
                               title="Click to change status"
                             >
                               {batch.status === 'RELEASED' ? (
-                                <StatusBadge status="success" label="RELEASED" icon={CheckCircle2} />
+                                <StatusBadge status="success" label="RELEASED" icon={<CheckCircle2 size={12} />} />
                               ) : batch.status === 'REJECTED' ? (
-                                <StatusBadge status="danger" label="REJECTED" icon={XCircle} />
+                                <StatusBadge status="danger" label="REJECTED" icon={<XCircle size={12} />} />
                               ) : (
-                                <StatusBadge status="warning" label={batch.status} icon={AlertTriangle} />
+                                <StatusBadge status="warning" label={batch.status} icon={<AlertTriangle size={12} />} />
                               )}
                             </button>
                           </td>
@@ -719,12 +804,12 @@ export default function ProductionPage() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="bg-surface p-2 rounded-lg border border-border">
                           <div className="text-[11px] text-ink-muted uppercase font-bold">Produced</div>
-                          <div className="text-sm font-bold text-ink">{w.totalKgProduced} kg</div>
+                          <div className="text-sm font-bold text-ink">{w.totalKgProduced || 0} kg</div>
                         </div>
                         <div className="bg-success-soft p-2 rounded-lg border border-success">
                           <div className="text-[11px] text-success uppercase font-bold">Total Paid</div>
                           <div className="text-sm font-bold text-success">
-                            <span className="font-mono">₹</span>{w.totalEarnedInr.toLocaleString('en-IN')}
+                            <span className="font-mono">₹</span>{(Number(w.totalEarnedInr) || 0).toLocaleString('en-IN')}
                           </div>
                         </div>
                       </div>
@@ -1033,7 +1118,7 @@ export default function ProductionPage() {
                 >
                   {workers.map((w) => (
                     <option key={w.id} value={w.id}>
-                      {w.name} ({w.role}) · Rate: <span className="font-mono">₹</span>{w.pieceRatePerKgInr}/kg
+                      {w.name} ({w.role}) · Rate: ₹{w.pieceRatePerKgInr}/kg
                     </option>
                   ))}
                 </select>
@@ -1311,7 +1396,7 @@ export default function ProductionPage() {
                     >
                       {dalLots.map((l) => (
                         <option key={l.id} value={l.id}>
-                          {l.lotNo} ({l.supplierName}) · Available: {l.availableWeightKg} kg · Rate: <span className="font-mono">₹</span>{l.ratePerKgInr}/kg
+                          {l.lotNo} ({l.supplierName}) · Available: {l.availableWeightKg} kg · Rate: ₹{l.ratePerKgInr}/kg
                         </option>
                       ))}
                     </select>
@@ -1441,7 +1526,7 @@ export default function ProductionPage() {
                             className="w-20 px-2 py-1 border border-border rounded-lg text-xs font-bold text-right"
                           />
                           <span className="text-xs font-bold text-primary w-16 text-right">
-                            <span className="font-mono">₹</span>{((Number(workerKgs[w.id]) || 0) * w.pieceRatePerKgInr).toLocaleString('en-IN')}
+                            <span className="font-mono">₹</span>{((Number(workerKgs[w.id]) || 0) * (Number(w.pieceRatePerKgInr) || 25)).toLocaleString('en-IN')}
                           </span>
                         </div>
                       </div>
@@ -1600,16 +1685,49 @@ export default function ProductionPage() {
               <div className="text-center font-bold text-ink-faint">↓</div>
 
               <div className="p-3 rounded-xl bg-success-soft border border-success">
-                <div className="font-bold text-success text-[11px] uppercase">3. Released Stock Lots</div>
-                <div className="space-y-1 mt-1">
-                  {selectedTraceBatch.outputLots.map((ol, idx) => (
-                    <div key={idx} className="flex justify-between font-bold text-success">
-                      <span>{ol.skuName} ({ol.packagesCount} packs)</span>
-                      <span className="font-mono text-[11px]">{ol.lotNumber}</span>
-                    </div>
-                  ))}
+                <div className="font-bold text-success text-[11px] uppercase">3. Packaged Stock Lots & POS Consumption</div>
+                <div className="space-y-2 mt-2">
+                  {(selectedTraceBatch.outputLots || []).map((ol, idx) => {
+                    const remaining = ol.packagesRemaining !== undefined ? ol.packagesRemaining : ol.packagesCount;
+                    const sold = Math.max(0, ol.packagesCount - remaining);
+                    const associatedOrders = (orders || []).filter((o) => !o.isVoid && (o.items || []).some((it) => it.batchLotId === ol.lotNumber));
+                    return (
+                      <div key={idx} className="p-2.5 rounded-lg bg-white border border-success/30 text-xs">
+                        <div className="flex justify-between font-bold text-ink">
+                          <span>{ol.skuName}</span>
+                          <span className="font-mono text-[11px] text-primary">{ol.lotNumber}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mt-1.5 pt-1.5 border-t border-border text-[11px]">
+                          <div>
+                            <span className="text-ink-muted block text-[10px]">Produced</span>
+                            <span className="font-bold text-ink">{ol.packagesCount} packs</span>
+                          </div>
+                          <div>
+                            <span className="text-ink-muted block text-[10px]">Sold / Billed</span>
+                            <span className="font-bold text-primary">{sold} packs</span>
+                          </div>
+                          <div>
+                            <span className="text-ink-muted block text-[10px]">Available</span>
+                            <span className="font-bold text-success">{remaining} packs</span>
+                          </div>
+                        </div>
+                        {associatedOrders.length > 0 && (
+                          <div className="mt-1.5 pt-1.5 border-t border-border text-[10px] text-ink-muted">
+                            <span className="font-semibold text-ink">Linked Sales: </span>
+                            {associatedOrders.slice(0, 3).map((o) => o.billNo).join(', ')}
+                            {associatedOrders.length > 3 && ` +${associatedOrders.length - 3} more`}
+                          </div>
+                        )}
+                        {remaining <= 5 && (
+                          <div className="mt-1.5 text-[10px] text-danger font-bold flex items-center gap-1">
+                            <AlertTriangle size={10} /> Low inventory balance! Reorder threshold reached.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-[11px] text-success mt-1">Expiry Date: +180 days ({selectedTraceBatch.expiryDate})</div>
+                <div className="text-[11px] text-success mt-2">Expiry Date: +180 days ({selectedTraceBatch.expiryDate})</div>
               </div>
             </div>
 

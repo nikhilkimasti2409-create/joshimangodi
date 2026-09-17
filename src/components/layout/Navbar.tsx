@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShoppingBag,
   Users,
@@ -19,6 +19,7 @@ import { t } from '../../lib/i18n';
 export default function Navbar() {
   const { activeCustomer, activeChannel, cart, products } = useAppState();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Close sidebar on route change
@@ -123,7 +124,7 @@ export default function Navbar() {
               <img
                 src="/assets/brand logo.png"
                 alt="Joshi Mangodi Logo"
-                className="h-8 w-8 sm:h-9 sm:w-9 object-contain rounded-lg border border-border bg-card p-0.5"
+                className="h-9 w-9 sm:h-10 sm:w-10 object-contain hover:scale-105 transition-transform drop-shadow-sm"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
@@ -158,7 +159,7 @@ export default function Navbar() {
                   <Icon size={15} strokeWidth={2} />
                   <span>{item.label}</span>
                   {item.count !== undefined && item.count > 0 && (
-                    <span className="bg-white/20 text-[11px] px-1.5 py-0.5 rounded-full font-semibold min-w-[18px] text-center">
+                    <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-white/20">
                       {item.count}
                     </span>
                   )}
@@ -167,13 +168,18 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Right: Channel Switcher */}
+          {/* Right: Channel Switcher (Single Wholesaler & Retail) */}
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-surface border border-border rounded-lg p-0.5">
               <button
-                onClick={() => store.setChannel('RETAIL')}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
-                  activeChannel === 'RETAIL'
+                onClick={() => {
+                  store.setChannel('RETAIL');
+                  if (activeCustomer?.customerType === 'wholesale') {
+                    store.setActiveCustomer(null);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
+                  activeChannel === 'RETAIL' && activeCustomer?.customerType !== 'wholesale'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-ink-muted hover:text-ink'
                 }`}
@@ -181,26 +187,25 @@ export default function Navbar() {
                 Retail
               </button>
               <button
-                onClick={() => store.setChannel('WHOLESALE_T1')}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
-                  activeChannel === 'WHOLESALE_T1'
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-wholesaler-modal'));
+                  if (location.pathname !== '/pos') {
+                    navigate('/pos');
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                  activeChannel !== 'RETAIL' || activeCustomer?.customerType === 'wholesale'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-ink-muted hover:text-ink'
                 }`}
-                title="Tier 1 Wholesale (₹175/kg)"
+                title="Wholesaler Orders & Custom Rates"
               >
-                WS-1
-              </button>
-              <button
-                onClick={() => store.setChannel('WHOLESALE_T2')}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
-                  activeChannel === 'WHOLESALE_T2'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-                title="Tier 2 Bulk (₹165/kg)"
-              >
-                WS-2
+                <span>Wholesaler</span>
+                {activeCustomer && activeCustomer.customerType === 'wholesale' && (
+                  <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full font-medium truncate max-w-[85px]">
+                    {activeCustomer.name}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -248,7 +253,7 @@ export default function Navbar() {
                   <img
                     src="/assets/brand logo.png"
                     alt="Logo"
-                    className="h-9 w-9 object-contain rounded-lg border border-border p-0.5"
+                    className="h-10 w-10 object-contain drop-shadow-sm"
                   />
                   <div>
                     <h2 className="font-bold text-base text-ink leading-tight">
@@ -267,41 +272,48 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Channel Selector */}
+              {/* Channel Selector (Single Wholesaler & Retail) */}
               <div className="p-3 bg-surface border-b border-border">
                 <div className="text-[11px] font-semibold text-ink-muted tracking-wide mb-2">
                   Pricing Channel
                 </div>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => store.setChannel('RETAIL')}
-                    className={`py-2 px-1 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
-                      activeChannel === 'RETAIL'
-                        ? 'bg-primary text-white border-primary'
+                    onClick={() => {
+                      store.setChannel('RETAIL');
+                      if (activeCustomer?.customerType === 'wholesale') {
+                        store.setActiveCustomer(null);
+                      }
+                      setSidebarOpen(false);
+                    }}
+                    className={`py-2 px-2 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
+                      activeChannel === 'RETAIL' && activeCustomer?.customerType !== 'wholesale'
+                        ? 'bg-primary text-white border-primary shadow-sm'
                         : 'bg-card text-ink-muted border-border'
                     }`}
                   >
                     Retail
                   </button>
                   <button
-                    onClick={() => store.setChannel('WHOLESALE_T1')}
-                    className={`py-2 px-1 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
-                      activeChannel === 'WHOLESALE_T1'
-                        ? 'bg-primary text-white border-primary'
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('open-wholesaler-modal'));
+                      if (location.pathname !== '/pos') {
+                        navigate('/pos');
+                      }
+                      setSidebarOpen(false);
+                    }}
+                    className={`py-2 px-2 rounded-lg text-xs font-semibold border transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                      activeChannel !== 'RETAIL' || activeCustomer?.customerType === 'wholesale'
+                        ? 'bg-primary text-white border-primary shadow-sm'
                         : 'bg-card text-ink-muted border-border'
                     }`}
                   >
-                    WS-1
-                  </button>
-                  <button
-                    onClick={() => store.setChannel('WHOLESALE_T2')}
-                    className={`py-2 px-1 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
-                      activeChannel === 'WHOLESALE_T2'
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-card text-ink-muted border-border'
-                    }`}
-                  >
-                    WS-2
+                    <span>Wholesaler</span>
+                    {activeCustomer && activeCustomer.customerType === 'wholesale' && (
+                      <span className="text-[10px] bg-white/20 px-1 rounded truncate max-w-[80px]">
+                        {activeCustomer.name}
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>

@@ -32,9 +32,6 @@ import { showToast } from '../components/common/Toast';
 import type { ProductSKU } from '../types';
 
 import Modal from '../components/common/Modal';
-import EmptyState from '../components/common/EmptyState';
-import StatusBadge from '../components/common/StatusBadge';
-import PageHeader from '../components/common/PageHeader';
 
 // Built-in asset gallery images
 const BUILTIN_ASSET_IMAGES = [
@@ -148,7 +145,7 @@ export default function ProductsPage() {
     [products]
   );
   const totalValuationCost = useMemo(
-    () => products.reduce((s, p) => s + p.currentStockUnits * p.unitCostInr, 0),
+    () => products.reduce((s, p) => s + p.currentStockUnits * (p.unitCostInr || 0), 0),
     [products]
   );
   const totalValuationRetail = useMemo(
@@ -593,9 +590,9 @@ export default function ProductsPage() {
   };
 
   // Calculations for live preview in the modal
-  const modalRetailMarginInr = round2(formData.retailPriceInr - formData.unitCostInr);
+  const modalRetailMarginInr = round2((formData.retailPriceInr || 0) - (formData.unitCostInr || 0));
   const modalRetailMarginPct = formData.retailPriceInr > 0 ? round2((modalRetailMarginInr / formData.retailPriceInr) * 100) : 0;
-  const modalWs1MarginInr = round2(formData.wholesaleT1PriceInr - formData.unitCostInr);
+  const modalWs1MarginInr = round2((formData.wholesaleT1PriceInr || 0) - (formData.unitCostInr || 0));
   const modalWs1MarginPct = formData.wholesaleT1PriceInr > 0 ? round2((modalWs1MarginInr / formData.wholesaleT1PriceInr) * 100) : 0;
   const modalTax = calculateTaxBreakdown(formData.retailPriceInr, formData.gstRate);
 
@@ -906,7 +903,7 @@ export default function ProductsPage() {
           {filteredProducts.map((prod) => {
             const isLowStock = prod.currentStockUnits <= prod.reorderPointUnits;
             const isOutOfStock = prod.currentStockUnits === 0;
-            const retailProfit = round2(prod.retailPriceInr - prod.unitCostInr);
+            const retailProfit = round2(prod.retailPriceInr - (prod.unitCostInr || 0));
             const retailMargin = prod.retailPriceInr > 0 ? round2((retailProfit / prod.retailPriceInr) * 100) : 0;
 
             return (
@@ -989,7 +986,7 @@ export default function ProductsPage() {
 
                     <div className="flex items-center justify-between text-[10px] pt-1 border-t border-border text-ink-muted">
                       <span>COGS Unit Cost:</span>
-                      <span className="font-mono font-bold text-ink-muted">₹{prod.unitCostInr} ({retailMargin}% margin)</span>
+                      <span className="font-mono font-bold text-ink-muted">₹{prod.unitCostInr || 0} ({retailMargin}% margin)</span>
                     </div>
                   </div>
                 </div>
@@ -1104,7 +1101,7 @@ export default function ProductsPage() {
                       <td className="p-4 text-right font-black text-ink text-sm">₹{prod.retailPriceInr}</td>
                       <td className="p-4 text-right font-extrabold text-ink-muted">₹{prod.wholesaleT1PriceInr}</td>
                       <td className="p-4 text-right font-extrabold text-ink-muted">₹{prod.wholesaleT2PriceInr}</td>
-                      <td className="p-4 text-right font-mono text-ink-muted">₹{prod.unitCostInr}</td>
+                      <td className="p-4 text-right font-mono text-ink-muted">₹{prod.unitCostInr || 0}</td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button

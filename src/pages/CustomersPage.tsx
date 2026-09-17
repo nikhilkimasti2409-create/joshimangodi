@@ -276,7 +276,8 @@ export default function CustomersPage() {
       `Thank you!%0A` +
       `JOSHI MANGODI UDYOG · Fatehpur, Sikar (Raj.)`;
 
-    return `https://wa.me/91${cust.phone}?text=${text}`;
+    const cleanPhone = (cust.phone || '').replace(/[^\d]/g, '').slice(-10);
+    return `https://wa.me/91${cleanPhone}?text=${text}`;
   };
 
   const exportCustomersCSV = () => {
@@ -435,7 +436,7 @@ export default function CustomersPage() {
                           </div>
                           <div className="flex items-center gap-3 text-sm text-ink-muted mt-0.5 flex-wrap">
                             <span className="flex items-center gap-1 font-mono font-medium text-[11px]">
-                              <Phone size={11} /> +91 {cust.phone}
+                              <Phone size={11} /> {cust.phone.startsWith('+') ? cust.phone : `+91 ${cust.phone}`}
                             </span>
                             {cust.area && (
                               <span className="flex items-center gap-1 text-[11px]">
@@ -453,7 +454,7 @@ export default function CustomersPage() {
                           <div
                             className={`text-sm font-bold font-mono ${ hasDue ? 'text-danger' : 'text-success' }`}
                           >
-                            ₹{cust.totalOutstandingInr.toLocaleString('en-IN')}
+                            ₹{(cust.totalOutstandingInr ?? 0).toLocaleString('en-IN')}
                           </div>
                         </div>
 
@@ -515,7 +516,7 @@ export default function CustomersPage() {
                         {selectedCustomer.customerType}
                       </span>
                     </div>
-                    <p className="text-xs font-mono text-ink-muted mt-0.5">+91 {selectedCustomer.phone}</p>
+                    <p className="text-xs font-mono text-ink-muted mt-0.5">{selectedCustomer.phone.startsWith('+') ? selectedCustomer.phone : `+91 ${selectedCustomer.phone}`}</p>
                     {selectedCustomer.area && (
                       <p className="text-xs text-ink-muted mt-0.5 flex items-center gap-1">
                         <MapPin size={11} /> {selectedCustomer.area}
@@ -539,14 +540,14 @@ export default function CustomersPage() {
                   <div className="p-3 rounded-xl bg-surface border border-border">
                     <div className="text-[11px] uppercase font-bold text-ink-muted">Outstanding Due</div>
                     <div className="text-base sm:text-lg font-bold text-danger font-mono">
-                      ₹{selectedCustomer.totalOutstandingInr.toLocaleString('en-IN')}
+                      ₹{(selectedCustomer.totalOutstandingInr ?? 0).toLocaleString('en-IN')}
                     </div>
                   </div>
 
                   <div className="p-3 rounded-xl bg-warning-soft border border-warning-soft">
                     <div className="text-[11px] uppercase font-bold text-ink-muted">Lifetime Value</div>
                     <div className="text-base sm:text-lg font-bold text-ink">
-                      ₹{selectedCustomer.lifetimeValueInr.toLocaleString('en-IN')}
+                      ₹{(selectedCustomer.lifetimeValueInr ?? 0).toLocaleString('en-IN')}
                     </div>
                   </div>
                 </div>
@@ -679,7 +680,7 @@ export default function CustomersPage() {
               <div className="min-w-0">
                 <StatusBadge variant={activeDetailsCust.customerType === "wholesale" ? "warning" : "info"} label={activeDetailsCust.customerType} />
                 <div className="flex items-center gap-3 text-sm text-ink-muted mt-2 flex-wrap font-mono">
-                  <span>Phone: +91 {activeDetailsCust.phone}</span>
+                  <span>Phone: {activeDetailsCust.phone.startsWith('+') ? activeDetailsCust.phone : `+91 ${activeDetailsCust.phone}`}</span>
                   {activeDetailsCust.area && <span>Area: {activeDetailsCust.area}</span>}
                   {activeDetailsCust.gstin && <span>GSTIN: {activeDetailsCust.gstin}</span>}
                 </div>
@@ -699,14 +700,14 @@ export default function CustomersPage() {
               <div className="p-3 rounded-xl bg-surface border border-border">
                 <div className="text-[11px] uppercase font-bold text-ink-muted">Current Outstanding</div>
                 <div className="text-base sm:text-lg font-bold text-danger font-mono mt-0.5">
-                  ₹{activeDetailsCust.totalOutstandingInr.toLocaleString('en-IN')}
+                  ₹{(activeDetailsCust.totalOutstandingInr ?? 0).toLocaleString('en-IN')}
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-warning-soft border border-warning-soft">
                 <div className="text-[11px] uppercase font-bold text-ink-muted">Lifetime Purchases</div>
                 <div className="text-base sm:text-lg font-bold font-mono text-ink mt-0.5">
-                  ₹{activeDetailsCust.lifetimeValueInr.toLocaleString('en-IN')}
+                  ₹{(activeDetailsCust.lifetimeValueInr ?? 0).toLocaleString('en-IN')}
                 </div>
               </div>
 
