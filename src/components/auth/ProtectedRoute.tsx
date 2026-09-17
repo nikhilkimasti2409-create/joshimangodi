@@ -8,11 +8,11 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FFF9FA] flex flex-col items-center justify-center p-4">
-        <div className="w-12 h-12 rounded-2xl bg-[#FBCFE8] border border-[#E5B6D3] flex items-center justify-center text-[#9F1239] animate-spin mb-4">
-          <div className="w-6 h-6 border-3 border-[#9F1239] border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center text-primary animate-spin mb-4">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
         </div>
-        <p className="text-sm font-bold text-[#632055]">Authenticating with Security Shield...</p>
+        <p className="text-sm font-medium text-ink-muted">Authenticating...</p>
       </div>
     );
   }

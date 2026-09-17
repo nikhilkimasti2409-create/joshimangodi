@@ -1,177 +1,285 @@
 @import "tailwindcss";
 
-:root {
-  --jm-surface: #FFF9FA;
-  --jm-surface-alt: #FEFCE8;
-  --jm-ink: #31102A;
-  --jm-ink-soft: #632055;
-  --jm-primary: #FBCFE8;
-  --jm-primary-press: #F472B6;
-  --jm-focus: #FEF08A;
-  --jm-line: #FCE7F3;
-  --jm-line-dark: #E5B6D3;
-  --jm-success: #047857;
-  --jm-success-soft: #D1FAE5;
-  --jm-danger: #9F1239;
-  --jm-danger-soft: #FFE4E6;
-  --jm-warning: #B45309;
-  --jm-warning-soft: #FEF3C7;
-  --jm-gold: #D97706;
+/* ═══════════════════════════════════════════════════════════
+   JOSHI MANGODI OPS — Design Tokens (v3 Redesign)
+   ═══════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-ink: #1B2030;
+  --color-ink-muted: #6B7280;
+  --color-ink-faint: #9CA3AF;
+  --color-surface: #F4F5F7;
+  --color-card: #FFFFFF;
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-soft: #EFF6FF;
+  --color-border: #E5E7EB;
+  --color-border-focus: #2563EB;
+  --color-success: #059669;
+  --color-success-soft: #ECFDF5;
+  --color-warning: #D97706;
+  --color-warning-soft: #FFFBEB;
+  --color-danger: #DC2626;
+  --color-danger-soft: #FEF2F2;
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'Cascadia Code', monospace;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Base Styles
+   ═══════════════════════════════════════════════════════════ */
+
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--jm-surface);
-  color: var(--jm-ink);
+  font-family: var(--font-sans);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
   min-height: 100vh;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.6;
+  line-height: 1.5;
+  font-size: 14px;
 }
 
-.font-serif-brand {
-  font-family: 'Cinzel', serif;
+/* ═══════════════════════════════════════════════════════════
+   Focus States — visible keyboard focus for accessibility
+   ═══════════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Custom scrollbar */
+/* Remove outline for mouse/touch users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Scrollbar — subtle, unobtrusive
+   ═══════════════════════════════════════════════════════════ */
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(251, 207, 232, 0.15);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 32, 85, 0.2);
+  background: rgba(26, 26, 46, 0.15);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 32, 85, 0.4);
+  background: rgba(26, 26, 46, 0.3);
 }
 
-/* Spacious, Airy Card Utilities */
+/* ═══════════════════════════════════════════════════════════
+   Card Utilities
+   ═══════════════════════════════════════════════════════════ */
+
 .jm-card {
-  background-color: #FFFFFF;
-  border: 1px solid var(--jm-line);
-  border-radius: 1.25rem;
-  box-shadow: 0 4px 20px -4px rgba(49, 16, 42, 0.05);
-  transition: all 0.2s ease-in-out;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
 }
 
-.jm-card:hover {
-  box-shadow: 0 8px 30px -4px rgba(49, 16, 42, 0.08);
-}
+/* No hover lift by default — earned, not given */
 
-.jm-card-alt {
-  background-color: var(--jm-surface-alt);
-  border: 1px solid #FDE047;
-  border-radius: 1.25rem;
-}
+/* ═══════════════════════════════════════════════════════════
+   Button Utilities
+   ═══════════════════════════════════════════════════════════ */
 
-/* Touch & Desktop Button Utilities */
 .jm-btn-primary {
-  min-height: 48px;
-  background-color: var(--jm-primary);
-  color: var(--jm-ink);
-  font-weight: 800;
-  border-radius: 1rem;
-  padding: 0.75rem 1.5rem;
+  min-height: 40px;
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.625rem;
-  border: 1.5px solid var(--jm-line-dark);
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 0.5rem;
+  border: none;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
   user-select: none;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 .jm-btn-primary:hover {
-  background-color: var(--jm-primary-press);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px -2px rgba(244, 114, 182, 0.35);
+  background-color: var(--color-primary-hover);
 }
 .jm-btn-primary:active {
-  transform: translateY(1px);
+  background-color: #1E40AF;
+}
+.jm-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Touch-friendly: larger on mobile */
+@media (pointer: coarse) {
+  .jm-btn-primary,
+  .jm-btn-secondary,
+  .jm-btn-ghost,
+  .jm-btn-danger {
+    min-height: 48px;
+    padding: 0.625rem 1.25rem;
+  }
 }
 
 .jm-btn-secondary {
-  min-height: 48px;
-  background-color: #FFFFFF;
-  color: var(--jm-ink);
-  font-weight: 700;
-  border-radius: 1rem;
-  padding: 0.75rem 1.5rem;
+  min-height: 40px;
+  background-color: var(--color-card);
+  color: var(--color-ink);
+  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.625rem;
-  border: 1.5px solid var(--jm-line);
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 0.5rem;
+  border: 1px solid var(--color-border);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   cursor: pointer;
   user-select: none;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 .jm-btn-secondary:hover {
-  background-color: var(--jm-surface-alt);
-  border-color: #FDE047;
-  transform: translateY(-1px);
+  background-color: var(--color-surface);
+  border-color: #C8C8D0;
 }
 .jm-btn-secondary:active {
-  transform: translateY(1px);
+  background-color: #E8E8EE;
+}
+.jm-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.jm-input {
-  min-height: 48px;
-  width: 100%;
-  border-radius: 1rem;
-  border: 1.5px solid var(--jm-line);
-  background-color: #FFFFFF;
-  padding: 0.75rem 1.25rem;
-  color: var(--jm-ink);
-  font-size: 0.95rem;
+.jm-btn-ghost {
+  min-height: 40px;
+  background-color: transparent;
+  color: var(--color-ink-muted);
   font-weight: 600;
-  transition: all 0.15s ease;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.jm-btn-ghost:hover {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.jm-btn-danger {
+  min-height: 40px;
+  background-color: var(--color-danger);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.jm-btn-danger:hover {
+  background-color: #B91C1C;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Form Input Utilities
+   ═══════════════════════════════════════════════════════════ */
+
+.jm-input {
+  min-height: 40px;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  font-weight: 400;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   outline: none;
+  line-height: 1.25rem;
 }
 .jm-input:focus {
-  border-color: var(--jm-primary-press);
-  box-shadow: 0 0 0 4px rgba(251, 207, 232, 0.45);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.jm-input::placeholder {
+  color: var(--color-ink-faint);
+  font-weight: 400;
+}
+
+@media (pointer: coarse) {
+  .jm-input,
+  .jm-select {
+    min-height: 48px;
+    padding: 0.625rem 0.875rem;
+  }
 }
 
 .jm-select {
-  min-height: 48px;
+  min-height: 40px;
   width: 100%;
-  border-radius: 1rem;
-  border: 1.5px solid var(--jm-line);
-  background-color: #FFFFFF;
-  padding: 0.75rem 1.25rem;
-  color: var(--jm-ink);
-  font-size: 0.95rem;
-  font-weight: 700;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  font-weight: 400;
   outline: none;
   cursor: pointer;
+  line-height: 1.25rem;
 }
 .jm-select:focus {
-  border-color: var(--jm-primary-press);
-  box-shadow: 0 0 0 4px rgba(251, 207, 232, 0.45);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* Animations */
-@keyframes slideInFromLeft {
-  from {
-    transform: translateX(-100%);
+/* ═══════════════════════════════════════════════════════════
+   Reduced Motion — respect user preference
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  to {
-    transform: translateX(0);
-  }
 }
 
-.animate-slide-in {
-  animation: slideInFromLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Print Styling for POS Invoices & Thermal Receipts */
+/* ═══════════════════════════════════════════════════════════
+   Print Styling for POS Invoices & Thermal Receipts
+   ═══════════════════════════════════════════════════════════ */
 @media print {
   body {
     background: #FFFFFF !important;
@@ -212,4 +320,14 @@ body {
     display: none !important;
     visibility: hidden !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Legacy class aliases — keep the old class working for 
+   the .font-serif-brand references until fully removed
+   ═══════════════════════════════════════════════════════════ */
+.font-serif-brand {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }

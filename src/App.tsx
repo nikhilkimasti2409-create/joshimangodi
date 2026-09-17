@@ -11,7 +11,7 @@ import FinancePage from './pages/FinancePage';
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-[#FFF9FA] text-[#31102A] flex flex-col font-sans">
+      <div className="min-h-screen bg-surface text-ink flex flex-col font-sans">
         <ToastContainer />
         <Navbar />
         <main className="flex-1">

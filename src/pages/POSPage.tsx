@@ -14,16 +14,21 @@ import {
   ShoppingBag,
   Clock,
   ChevronUp,
-  SlidersHorizontal,
   Tag,
   QrCode,
+  X,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 import { useAppState, store } from '../lib/store';
 import { t } from '../lib/i18n';
 import { showToast } from '../components/common/Toast';
 import { playTapSound, playSuccessSound, playErrorSound, speakEnglish } from '../lib/audio';
 import type { ProductSKU, Order, PaymentMethod } from '../types';
-
+import Modal from '../components/common/Modal';
+import EmptyState from '../components/common/EmptyState';
+import StatusBadge from '../components/common/StatusBadge';
+import PageHeader from '../components/common/PageHeader';
 export default function POSPage() {
   const { products, cart, activeChannel, activeCustomer, orders, customers } = useAppState();
   const [search, setSearch] = useState('');
@@ -188,7 +193,7 @@ export default function POSPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-100px)] pb-36 md:pb-16 pt-2">
+    <div className="min-h-[calc(100vh-100px)] pb-36 md:pb-16 pt-2 bg-surface">
       {/* Top Controls Bar (Open & Airy) */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
@@ -204,10 +209,10 @@ export default function POSPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
+                className={`px-4 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
                   selectedCategory === cat.id
-                    ? 'bg-[#31102A] text-white shadow-md'
-                    : 'bg-white text-[#632055] hover:bg-[#FEFCE8] border border-[#FCE7F3]'
+                    ? 'bg-primary text-white'
+                    : 'bg-card text-ink-muted border border-border hover:bg-surface'
                 }`}
               >
                 {cat.name}
@@ -218,20 +223,23 @@ export default function POSPage() {
           {/* Search bar & customer attachment */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 sm:w-72">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#632055]" />
+              <label htmlFor="pos-search" className="sr-only">Search products</label>
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
               <input
+                id="pos-search"
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('pos_search_placeholder')}
-                className="jm-input !pl-10 !text-xs !min-h-[44px] shadow-xs"
+                className="jm-input pl-10 w-full"
               />
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-black cursor-pointer"
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink cursor-pointer"
                 >
-                  ✕
+                  <X size={16} />
                 </button>
               )}
             </div>
@@ -239,12 +247,12 @@ export default function POSPage() {
             {/* Attach Customer Button */}
             <button
               onClick={() => setShowCustomerPicker(true)}
-              className="jm-btn-secondary !min-h-[44px] !text-xs !py-2 !px-4 shrink-0 flex items-center gap-2 shadow-xs"
+              className="jm-btn-secondary shrink-0 flex items-center gap-2"
             >
               {activeCustomer ? (
                 <>
-                  <UserCheck size={16} className="text-emerald-700" />
-                  <span className="truncate max-w-[110px] font-black text-emerald-800">{activeCustomer.name}</span>
+                  <UserCheck size={16} className="text-success" />
+                  <span className="truncate max-w-[110px] font-semibold text-success">{activeCustomer.name}</span>
                 </>
               ) : (
                 <>
@@ -258,10 +266,11 @@ export default function POSPage() {
             {/* Today's bills toggle */}
             <button
               onClick={() => setViewHistory(!viewHistory)}
-              className={`p-2.5 rounded-2xl border border-[#FCE7F3] transition cursor-pointer shrink-0 shadow-xs ${
-                viewHistory ? 'bg-[#31102A] text-white' : 'bg-white text-[#632055] hover:bg-[#FEFCE8]'
+              className={`p-2.5 rounded-lg border transition cursor-pointer shrink-0 ${
+                viewHistory ? 'bg-primary text-white border-primary' : 'bg-card text-ink-muted border-border hover:bg-surface'
               }`}
               title="Today's Bills History"
+              aria-label="Toggle bills history"
             >
               <Clock size={18} />
             </button>
@@ -273,55 +282,57 @@ export default function POSPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {viewHistory ? (
           /* Today's Bills History Panel */
-          <div className="jm-card p-6 mb-8 bg-white">
-            <div className="flex items-center justify-between mb-5 border-b border-[#FCE7F3] pb-4">
-              <div>
-                <h2 className="text-xl font-black text-[#31102A]">Today’s Sales History</h2>
-                <p className="text-xs text-[#632055] mt-0.5">{orders.length} total bills recorded</p>
-              </div>
-              <button
-                onClick={() => setViewHistory(false)}
-                className="jm-btn-secondary !min-h-[40px] !text-xs"
-              >
-                Back to POS Grid
-              </button>
+          <div className="jm-card p-6 mb-8">
+            <div className="border-b border-border pb-4 mb-5">
+              <PageHeader 
+                title="Today’s Sales History"
+                description={`${orders.length} total bills recorded`}
+                primaryAction={
+                  <button
+                    onClick={() => setViewHistory(false)}
+                    className="jm-btn-secondary"
+                  >
+                    Back to POS Grid
+                  </button>
+                }
+              />
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="bg-[#FFF9FA] border-b border-[#FCE7F3] text-[#632055] font-bold">
-                    <th className="p-3.5">Bill No</th>
-                    <th className="p-3.5">Customer</th>
-                    <th className="p-3.5">Items</th>
-                    <th className="p-3.5">Amount</th>
-                    <th className="p-3.5">Mode</th>
-                    <th className="p-3.5">Status</th>
-                    <th className="p-3.5 text-right">Action</th>
+                  <tr className="bg-surface border-b border-border text-xs font-semibold text-ink-muted uppercase tracking-wide">
+                    <th scope="col" className="p-3.5">Bill No</th>
+                    <th scope="col" className="p-3.5">Customer</th>
+                    <th scope="col" className="p-3.5">Items</th>
+                    <th scope="col" className="p-3.5">Amount</th>
+                    <th scope="col" className="p-3.5">Mode</th>
+                    <th scope="col" className="p-3.5">Status</th>
+                    <th scope="col" className="p-3.5 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#FCE7F3]">
+                <tbody className="divide-y divide-border">
                   {orders.map((ord) => (
-                    <tr key={ord.id} className={ord.isVoid ? 'opacity-40 line-through bg-gray-50' : 'hover:bg-[#FFF9FA]'}>
-                      <td className="p-3.5 font-mono font-bold text-[#31102A]">{ord.billNo}</td>
+                    <tr key={ord.id} className={ord.isVoid ? 'opacity-40 line-through bg-surface' : 'even:bg-surface'}>
+                      <td className="p-3.5 font-mono font-medium text-ink">{ord.billNo}</td>
                       <td className="p-3.5 font-medium">
-                        <div className="font-extrabold text-[#31102A]">{ord.customerName}</div>
-                        {ord.customerPhone && <div className="text-[11px] text-[#632055]">{ord.customerPhone}</div>}
+                        <div className="font-semibold text-ink">{ord.customerName}</div>
+                        {ord.customerPhone && <div className="text-[11px] text-ink-muted">{ord.customerPhone}</div>}
                       </td>
                       <td className="p-3.5">
                         {ord.items.map((i) => `${i.skuName} (${i.quantity})`).join(', ')}
                       </td>
-                      <td className="p-3.5 font-black text-sm text-[#31102A]">₹{ord.grandTotalInr.toLocaleString('en-IN')}</td>
+                      <td className="p-3.5 font-mono font-semibold text-sm text-ink">₹{ord.grandTotalInr.toLocaleString('en-IN')}</td>
                       <td className="p-3.5">
-                        <span className="px-2.5 py-1 rounded-lg bg-[#FFF9FA] border border-[#FCE7F3] font-bold text-[11px]">
+                        <span className="px-2.5 py-1 rounded-full bg-surface border border-border font-medium text-[11px]">
                           {ord.paymentMethod}
                         </span>
                       </td>
                       <td className="p-3.5">
                         {ord.isVoid ? (
-                          <span className="text-red-700 font-black text-xs">VOID</span>
+                          <StatusBadge variant="danger" label="VOID" />
                         ) : (
-                          <span className="text-emerald-700 font-black text-xs">PAID</span>
+                          <StatusBadge variant="success" label="PAID" />
                         )}
                       </td>
                       <td className="p-3.5 text-right">
@@ -331,10 +342,11 @@ export default function POSPage() {
                               setCompletedOrder(ord);
                               setIsReceiptModalOpen(true);
                             }}
-                            className="p-2 rounded-xl border border-[#FCE7F3] hover:bg-[#FEFCE8] text-[#31102A] cursor-pointer"
+                            className="p-2 rounded-lg border border-border hover:bg-surface text-ink cursor-pointer"
                             title="Print / View"
+                            aria-label="Print or View Bill"
                           >
-                            <Printer size={15} />
+                            <Printer size={16} />
                           </button>
                           {!ord.isVoid && (
                             <button
@@ -342,10 +354,11 @@ export default function POSPage() {
                                 setVoidModalOrder(ord);
                                 setVoidReason('');
                               }}
-                              className="p-2 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 cursor-pointer"
+                              className="p-2 rounded-lg border border-danger-soft text-danger hover:bg-danger-soft cursor-pointer"
                               title="Void Bill & Restock"
+                              aria-label="Void Bill"
                             >
-                              <Trash2 size={15} />
+                              <Trash2 size={16} />
                             </button>
                           )}
                         </div>
@@ -357,45 +370,41 @@ export default function POSPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left: Product Grid (8 cols on lg) */}
             <div className="lg:col-span-8">
               {products.length === 0 ? (
-                <div className="jm-card p-12 sm:p-16 text-center text-[#632055] bg-white border-2 border-dashed border-[#FBCFE8] space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-3xl bg-[#FFF9FA] border border-[#FCE7F3] flex items-center justify-center text-[#9F1239]">
-                    <Tag size={32} />
-                  </div>
-                  <div>
-                    <h3 className="font-serif-brand font-black text-xl text-[#31102A]">No Products in Catalog Yet</h3>
-                    <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                      All seed products were cleared. Please upload or create your custom Mangodi products to begin counter billing.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                    <Link
-                      to="/products"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#9F1239] text-white font-extrabold text-xs shadow-md hover:bg-[#881337] transition"
-                    >
-                      <Plus size={16} />
-                      <span>Upload / Add Products</span>
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => store.loadSampleProducts()}
-                      className="px-4 py-2.5 rounded-2xl bg-[#FEF08A] border border-[#FDE047] text-[#31102A] font-extrabold text-xs hover:bg-[#FDE047] transition cursor-pointer"
-                    >
-                      Load Demo SKUs
-                    </button>
-                  </div>
-                </div>
+                <EmptyState
+                  icon={<Tag size={24} />}
+                  title="No Products in Catalog Yet"
+                  description="All seed products were cleared. Please upload or create your custom Mangodi products to begin counter billing."
+                  action={
+                    <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+                      <Link
+                        to="/products"
+                        className="jm-btn-primary flex items-center gap-2"
+                      >
+                        <Plus size={16} />
+                        <span>Upload / Add Products</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => store.loadSampleProducts()}
+                        className="jm-btn-secondary"
+                      >
+                        Load Demo SKUs
+                      </button>
+                    </div>
+                  }
+                />
               ) : filteredProducts.length === 0 ? (
-                <div className="jm-card p-16 text-center text-[#632055] bg-white">
-                  <ShoppingBag size={52} className="mx-auto mb-3 opacity-30" />
-                  <p className="font-extrabold text-base">No products match search criteria.</p>
-                  <p className="text-xs text-gray-500 mt-1">Try selecting another category or clearing search.</p>
-                </div>
+                <EmptyState
+                  icon={<ShoppingBag size={24} />}
+                  title="No products match search criteria."
+                  description="Try selecting another category or clearing search."
+                />
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                   {filteredProducts.map((prod) => {
                     const inCartItem = cart.find((c) => c.sku.id === prod.id);
                     const isLowStock = prod.currentStockUnits <= prod.reorderPointUnits;
@@ -408,38 +417,31 @@ export default function POSPage() {
                       <div
                         key={prod.id}
                         onClick={() => handleAddToCart(prod)}
-                        className={`jm-card overflow-hidden p-4 flex flex-col justify-between transition cursor-pointer hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] relative ${
-                          inCartItem ? 'ring-2 ring-[#9F1239] bg-[#FFF9FA]' : 'bg-white'
+                        className={`bg-card border rounded-lg p-4 flex flex-col justify-between transition cursor-pointer active:scale-[0.98] relative ${
+                          inCartItem ? 'border-primary ring-1 ring-primary bg-primary-soft/10' : 'border-border hover:border-ink-muted'
                         }`}
                       >
                         {/* Top Stock Badge */}
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] uppercase font-bold text-[#632055] tracking-wider bg-[#FFF9FA] border border-[#FCE7F3] px-2 py-0.5 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] uppercase font-semibold text-ink-muted tracking-wider bg-surface border border-border px-2 py-0.5 rounded-full">
                             {prod.shape}
                           </span>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              prod.currentStockUnits === 0
-                                ? 'bg-red-100 text-red-800'
-                                : isLowStock
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            }`}
-                          >
-                            {prod.currentStockUnits} left
-                          </span>
+                          <StatusBadge
+                            variant={prod.currentStockUnits === 0 ? 'danger' : isLowStock ? 'warning' : 'success'}
+                            label={`${prod.currentStockUnits} left`}
+                          />
                         </div>
 
                         {/* Product Image */}
-                        <div className="h-32 sm:h-36 w-full rounded-2xl bg-gradient-to-b from-[#FFF9FA] to-[#FEFCE8] flex items-center justify-center p-3 mb-3 overflow-hidden">
+                        <div className="h-32 sm:h-36 w-full rounded-lg bg-surface flex items-center justify-center p-3 mb-4 overflow-hidden">
                           {prod.image ? (
                             <img
                               src={prod.image}
                               alt={prod.name}
-                              className="h-full w-full object-contain filter drop-shadow-sm transition hover:scale-105"
+                              className="h-full w-full object-contain"
                             />
                           ) : (
-                            <div className="h-16 w-16 rounded-2xl bg-[#FBCFE8] flex items-center justify-center text-[#31102A] font-serif-brand font-bold text-xl">
+                            <div className="h-16 w-16 rounded-full bg-border flex items-center justify-center text-ink font-semibold text-xl">
                               JM
                             </div>
                           )}
@@ -447,39 +449,40 @@ export default function POSPage() {
 
                         {/* Name & Details */}
                         <div className="space-y-1">
-                          <h3 className="font-extrabold text-sm sm:text-base text-[#31102A] line-clamp-1 leading-snug">
+                          <h3 className="font-semibold text-sm sm:text-base text-ink line-clamp-1 leading-snug">
                             {prod.name}
                           </h3>
-                          <div className="text-xs text-gray-500 font-medium">
-                            Pack: <strong className="text-[#31102A] font-bold">{prod.packetSizeGrams}g</strong>
+                          <div className="text-xs text-ink-muted font-medium">
+                            Pack: <strong className="text-ink">{prod.packetSizeGrams}g</strong>
                           </div>
                         </div>
 
                         {/* Price & Action Button */}
-                        <div className="mt-3.5 pt-3 border-t border-[#FCE7F3] flex items-center justify-between">
+                        <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
                           <div>
-                            <div className="text-base sm:text-lg font-black text-[#9F1239]">
+                            <div className="font-mono text-base sm:text-lg font-bold text-ink">
                               ₹{activePrice}
                             </div>
                             {prod.mrpInr > activePrice && (
-                              <div className="text-[10px] text-gray-400 line-through">
+                              <div className="font-mono text-[11px] text-ink-faint line-through">
                                 MRP ₹{prod.mrpInr}
                               </div>
                             )}
                           </div>
 
                           {inCartItem ? (
-                            <div className="flex items-center gap-1 bg-[#FBCFE8] rounded-xl p-1 border border-[#E5B6D3]">
+                            <div className="flex items-center gap-1 bg-surface rounded-lg p-1 border border-border">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleUpdateQty(prod.id, inCartItem.quantity - 1);
                                 }}
-                                className="w-7 h-7 rounded-lg bg-white text-[#31102A] font-black flex items-center justify-center hover:bg-gray-100 cursor-pointer text-xs"
+                                aria-label="Decrease quantity"
+                                className="w-9 h-9 rounded bg-card text-ink font-bold flex items-center justify-center hover:bg-surface cursor-pointer text-sm border border-border"
                               >
                                 -
                               </button>
-                              <span className="w-5 text-center text-xs font-black text-[#31102A]">
+                              <span className="w-6 text-center font-mono text-xs font-semibold text-ink">
                                 {inCartItem.quantity}
                               </span>
                               <button
@@ -487,7 +490,8 @@ export default function POSPage() {
                                   e.stopPropagation();
                                   handleUpdateQty(prod.id, inCartItem.quantity + 1);
                                 }}
-                                className="w-7 h-7 rounded-lg bg-[#31102A] text-white font-black flex items-center justify-center hover:bg-black cursor-pointer text-xs"
+                                aria-label="Increase quantity"
+                                className="w-9 h-9 rounded bg-primary text-white font-bold flex items-center justify-center hover:bg-primary-hover cursor-pointer text-sm"
                               >
                                 +
                               </button>
@@ -498,9 +502,9 @@ export default function POSPage() {
                                 e.stopPropagation();
                                 handleAddToCart(prod);
                               }}
-                              className="px-3 py-1.5 rounded-xl bg-[#FBCFE8] hover:bg-[#F472B6] text-[#31102A] font-extrabold text-xs border border-[#E5B6D3] flex items-center gap-1.5 cursor-pointer transition shadow-xs"
+                              className="px-3 py-1.5 rounded-lg bg-surface hover:bg-border text-ink font-semibold text-xs border border-border flex items-center gap-1.5 cursor-pointer transition"
                             >
-                              <Plus size={14} strokeWidth={3} /> Add
+                              <Plus size={14} /> Add
                             </button>
                           )}
                         </div>
@@ -513,22 +517,22 @@ export default function POSPage() {
 
             {/* Right: Cart & Quick Checkout Panel (Desktop) */}
             <div className="hidden lg:block lg:col-span-4">
-              <div className="jm-card p-5 sticky top-[95px] shadow-lg bg-white space-y-4">
+              <div className="jm-card p-6 sticky top-6 space-y-4">
                 {/* Cart Header */}
-                <div className="flex items-center justify-between pb-3.5 border-b border-[#FCE7F3]">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#FBCFE8] flex items-center justify-center text-[#9F1239]">
-                      <ShoppingBag size={18} />
+                <div className="flex items-center justify-between pb-4 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center text-primary">
+                      <ShoppingBag size={20} />
                     </div>
-                    <h2 className="font-black text-lg text-[#31102A]">{t('pos_cart')}</h2>
-                    <span className="bg-[#FEF08A] text-[#31102A] text-xs px-2.5 py-0.5 rounded-full font-black">
+                    <h2 className="font-bold text-lg text-ink">{t('pos_cart')}</h2>
+                    <span className="bg-surface text-ink-muted text-xs px-2.5 py-1 rounded-full font-semibold border border-border">
                       {cart.length}
                     </span>
                   </div>
                   {cart.length > 0 && (
                     <button
                       onClick={handleClearCart}
-                      className="text-xs font-bold text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-semibold text-danger hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <Trash2 size={14} /> Clear
                     </button>
@@ -536,58 +540,60 @@ export default function POSPage() {
                 </div>
 
                 {/* Attached Customer Card */}
-                <div className="p-3.5 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3] flex items-center justify-between">
+                <div className="p-4 rounded-lg bg-surface border border-border flex items-center justify-between">
                   <div className="truncate">
-                    <div className="text-[11px] font-bold text-[#632055]">Attached Customer</div>
-                    <div className="font-black text-xs text-[#31102A] truncate mt-0.5">
+                    <div className="text-[11px] font-medium text-ink-muted">Attached Customer</div>
+                    <div className="font-semibold text-sm text-ink truncate mt-1">
                       {activeCustomer ? `${activeCustomer.name} (${activeCustomer.phone})` : t('pos_walk_in')}
                     </div>
                   </div>
                   <button
                     onClick={() => setShowCustomerPicker(true)}
-                    className="text-xs font-extrabold text-[#9F1239] hover:underline shrink-0 ml-3 cursor-pointer"
+                    className="text-xs font-semibold text-primary hover:underline shrink-0 ml-4 cursor-pointer"
                   >
                     {activeCustomer ? 'Change' : 'Select'}
                   </button>
                 </div>
 
                 {/* Cart Items List */}
-                <div className="max-h-[320px] overflow-y-auto divide-y divide-[#FCE7F3] pr-1.5 space-y-1">
+                <div className="max-h-[320px] overflow-y-auto divide-y divide-border pr-2 space-y-2">
                   {cart.length === 0 ? (
-                    <div className="py-12 text-center text-[#632055]">
-                      <p className="text-sm font-extrabold">Cart is currently empty</p>
-                      <p className="text-xs text-gray-500 mt-1">Tap any product card on the left to add.</p>
+                    <div className="py-12 text-center text-ink-muted">
+                      <p className="text-sm font-semibold">Cart is currently empty</p>
+                      <p className="text-xs mt-1">Tap any product card on the left to add.</p>
                     </div>
                   ) : (
                     cart.map((item) => (
                       <div key={item.sku.id} className="py-3 flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <div className="font-black text-xs text-[#31102A] truncate">
+                          <div className="font-semibold text-sm text-ink truncate">
                             {item.sku.name}
                           </div>
-                          <div className="text-xs text-[#632055] mt-0.5">
+                          <div className="font-mono text-xs text-ink-muted mt-1">
                             {item.quantity} x ₹{Number(item.unitPriceInr) > 0 ? item.unitPriceInr : (item.sku.retailPriceInr || 0)}
                           </div>
                         </div>
 
                         {/* Quantity Stepper */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center bg-[#FFF9FA] border border-[#FCE7F3] rounded-xl p-0.5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center bg-surface border border-border rounded-lg p-0.5">
                             <button
                               onClick={() => handleUpdateQty(item.sku.id, item.quantity - 1)}
-                              className="w-7 h-7 flex items-center justify-center text-xs font-bold text-[#31102A] hover:bg-[#FBCFE8] rounded-lg cursor-pointer"
+                              aria-label="Decrease quantity"
+                              className="w-9 h-9 flex items-center justify-center text-sm font-bold text-ink hover:bg-border rounded cursor-pointer"
                             >
                               -
                             </button>
-                            <span className="w-6 text-center text-xs font-black">{item.quantity}</span>
+                            <span className="w-6 text-center font-mono text-sm font-semibold text-ink">{item.quantity}</span>
                             <button
                               onClick={() => handleUpdateQty(item.sku.id, item.quantity + 1)}
-                              className="w-7 h-7 flex items-center justify-center text-xs font-bold text-[#31102A] hover:bg-[#FBCFE8] rounded-lg cursor-pointer"
+                              aria-label="Increase quantity"
+                              className="w-9 h-9 flex items-center justify-center text-sm font-bold text-ink hover:bg-border rounded cursor-pointer"
                             >
                               +
                             </button>
                           </div>
-                          <div className="w-16 text-right font-black text-sm text-[#31102A]">
+                          <div className="w-20 text-right font-mono font-bold text-sm text-ink">
                             ₹{(Number(item.totalInr) > 0 ? Number(item.totalInr) : (Number(item.unitPriceInr || item.sku.retailPriceInr || 0) * item.quantity)).toLocaleString('en-IN')}
                           </div>
                         </div>
@@ -598,34 +604,35 @@ export default function POSPage() {
 
                 {/* Cart Totals & Checkout Button */}
                 {cart.length > 0 && (
-                  <div className="pt-4 border-t-2 border-[#FCE7F3] space-y-3">
-                    <div className="flex justify-between text-xs text-[#632055] font-medium">
+                  <div className="pt-4 border-t border-border space-y-4">
+                    <div className="flex justify-between text-sm text-ink-muted font-medium">
                       <span>Subtotal</span>
-                      <span className="font-bold text-[#31102A]">₹{cartSubtotal.toLocaleString('en-IN')}</span>
+                      <span className="font-mono font-semibold text-ink">₹{cartSubtotal.toLocaleString('en-IN')}</span>
                     </div>
 
-                    <div className="flex justify-between text-xs text-[#632055] items-center">
-                      <span className="font-medium">Discount (₹)</span>
+                    <div className="flex justify-between text-sm text-ink-muted items-center">
+                      <label htmlFor="discount-amount" className="font-medium">Discount (₹)</label>
                       <input
+                        id="discount-amount"
                         type="number"
                         min="0"
                         value={discountAmount}
                         onChange={(e) => setDiscountAmount(e.target.value)}
-                        className="w-24 text-right px-2.5 py-1.5 border border-[#FCE7F3] rounded-xl text-xs font-extrabold"
+                        className="jm-input w-24 text-right font-mono"
                       />
                     </div>
 
-                    <div className="flex justify-between text-base font-black text-[#31102A] pt-3 border-t border-[#FCE7F3]">
+                    <div className="flex justify-between text-base font-bold text-ink pt-4 border-t border-border">
                       <span>{t('pos_total')}</span>
-                      <span className="text-[#9F1239] text-2xl">₹{grandTotal.toLocaleString('en-IN')}</span>
+                      <span className="font-mono text-primary text-xl">₹{grandTotal.toLocaleString('en-IN')}</span>
                     </div>
 
                     <button
                       onClick={openCheckout}
-                      className="jm-btn-primary w-full mt-2 !py-4 !text-base !font-black shadow-lg flex items-center justify-center gap-2.5"
+                      className="jm-btn-primary w-full flex items-center justify-center gap-2.5 mt-2"
                     >
                       <Receipt size={20} />
-                      <span>Complete Bill · ₹{grandTotal.toLocaleString('en-IN')}</span>
+                      <span className="font-mono">Complete Bill · ₹{grandTotal.toLocaleString('en-IN')}</span>
                       <ArrowRight size={18} />
                     </button>
                   </div>
@@ -636,26 +643,26 @@ export default function POSPage() {
         )}
       </div>
 
-      {/* Floating Mobile Cart Bar (Clean & uncluttered) */}
+      {/* Floating Mobile Cart Bar */}
       <div className="lg:hidden fixed bottom-6 inset-x-0 z-30 px-4 pointer-events-none">
         {cart.length > 0 && (
           <div
             onClick={() => setMobileCartDrawerOpen(true)}
-            className="pointer-events-auto bg-[#31102A] text-white p-4 rounded-3xl shadow-2xl flex items-center justify-between border-2 border-[#FBCFE8] cursor-pointer active:scale-[0.99] transition"
+            className="pointer-events-auto bg-ink text-surface p-4 rounded-xl shadow-lg flex items-center justify-between cursor-pointer active:scale-[0.99] transition"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-[#FBCFE8] text-[#31102A] flex items-center justify-center font-black text-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-surface text-ink flex items-center justify-center font-bold text-sm">
                 {cart.length}
               </div>
               <div>
-                <div className="text-xs text-pink-200 font-semibold">Current Bill</div>
-                <div className="text-lg font-black text-white">₹{grandTotal.toLocaleString('en-IN')}</div>
+                <div className="text-xs text-ink-faint font-medium">Current Bill</div>
+                <div className="font-mono text-lg font-bold text-surface">₹{grandTotal.toLocaleString('en-IN')}</div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-[#FBCFE8] text-[#31102A] px-4 py-2.5 rounded-2xl font-black text-xs shadow-xs">
-              <span>Review & Pay</span>
-              <ChevronUp size={16} strokeWidth={3} />
+            <div className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-lg font-semibold text-sm">
+              <span>Review</span>
+              <ChevronUp size={16} />
             </div>
           </div>
         )}
@@ -663,47 +670,50 @@ export default function POSPage() {
 
       {/* Mobile Cart Bottom Sheet Drawer */}
       {mobileCartDrawerOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/60 flex flex-col justify-end backdrop-blur-xs">
-          <div className="bg-white rounded-t-[2rem] p-6 border-t-2 border-[#FCE7F3] shadow-2xl max-h-[85vh] flex flex-col space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#FCE7F3]">
-              <div className="flex items-center gap-2.5">
-                <ShoppingBag size={20} className="text-[#9F1239]" />
-                <h3 className="font-black text-lg text-[#31102A]">Current Cart ({cart.length})</h3>
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/60 flex flex-col justify-end backdrop-blur-sm">
+          <div className="bg-card rounded-t-xl p-6 border-t border-border shadow-lg max-h-[85vh] flex flex-col space-y-4">
+            <div className="flex items-center justify-between pb-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <ShoppingBag size={20} className="text-primary" />
+                <h3 className="font-bold text-lg text-ink">Current Cart ({cart.length})</h3>
               </div>
               <button
                 onClick={() => setMobileCartDrawerOpen(false)}
-                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold"
+                aria-label="Close"
+                className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-ink-muted hover:text-ink font-bold"
               >
-                ✕
+                <X size={20} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-[#FCE7F3] pr-1 space-y-2">
+            <div className="flex-1 overflow-y-auto divide-y divide-border pr-2 space-y-2">
               {cart.map((item) => (
                 <div key={item.sku.id} className="py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="font-black text-xs text-[#31102A] truncate">{item.sku.name}</div>
-                    <div className="text-xs text-[#632055]">
+                    <div className="font-semibold text-sm text-ink truncate">{item.sku.name}</div>
+                    <div className="font-mono text-xs text-ink-muted mt-1">
                       {item.quantity} x ₹{Number(item.unitPriceInr) > 0 ? item.unitPriceInr : (item.sku.retailPriceInr || 0)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center bg-[#FFF9FA] border border-[#FCE7F3] rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center bg-surface border border-border rounded-lg">
                       <button
                         onClick={() => handleUpdateQty(item.sku.id, item.quantity - 1)}
-                        className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#31102A]"
+                        aria-label="Decrease quantity"
+                        className="w-9 h-9 flex items-center justify-center text-sm font-bold text-ink"
                       >
                         -
                       </button>
-                      <span className="w-6 text-center text-xs font-black">{item.quantity}</span>
+                      <span className="w-8 text-center font-mono text-sm font-semibold text-ink">{item.quantity}</span>
                       <button
                         onClick={() => handleUpdateQty(item.sku.id, item.quantity + 1)}
-                        className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#31102A]"
+                        aria-label="Increase quantity"
+                        className="w-9 h-9 flex items-center justify-center text-sm font-bold text-ink"
                       >
                         +
                       </button>
                     </div>
-                    <div className="w-16 text-right font-black text-sm text-[#31102A]">
+                    <div className="w-20 text-right font-mono font-bold text-sm text-ink">
                       ₹{(Number(item.totalInr) > 0 ? Number(item.totalInr) : (Number(item.unitPriceInr || item.sku.retailPriceInr || 0) * item.quantity)).toLocaleString('en-IN')}
                     </div>
                   </div>
@@ -711,14 +721,14 @@ export default function POSPage() {
               ))}
             </div>
 
-            <div className="pt-3 border-t-2 border-[#FCE7F3] space-y-3">
-              <div className="flex justify-between font-black text-xl text-[#31102A]">
+            <div className="pt-4 border-t border-border space-y-4">
+              <div className="flex justify-between font-bold text-lg text-ink">
                 <span>Total Amount:</span>
-                <span className="text-[#9F1239]">₹{grandTotal.toLocaleString('en-IN')}</span>
+                <span className="font-mono text-primary">₹{grandTotal.toLocaleString('en-IN')}</span>
               </div>
               <button
                 onClick={openCheckout}
-                className="jm-btn-primary w-full !py-4 !text-base !font-black shadow-md flex items-center justify-center gap-2"
+                className="jm-btn-primary w-full flex items-center justify-center gap-2"
               >
                 <Receipt size={20} />
                 <span>Proceed to Checkout</span>
@@ -730,275 +740,300 @@ export default function POSPage() {
       )}
 
       {/* Customer Picker Modal */}
-      {showCustomerPicker && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#FCE7F3] shadow-2xl max-h-[85vh] flex flex-col space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#FCE7F3]">
-              <h3 className="font-black text-lg text-[#31102A]">Attach Customer for Bill</h3>
-              <button onClick={() => setShowCustomerPicker(false)} className="text-gray-400 hover:text-black font-bold">
-                ✕
-              </button>
-            </div>
+      <Modal 
+        open={showCustomerPicker} 
+        onClose={() => setShowCustomerPicker(false)} 
+        title="Select Customer" 
+        id="customer-picker"
+      >
+        <div className="flex flex-col space-y-4">
+          <button
+            onClick={() => {
+              store.setActiveCustomer(null);
+              setShowCustomerPicker(false);
+            }}
+            className="w-full text-left p-4 rounded-lg border border-border hover:bg-surface transition font-semibold text-sm flex items-center justify-between cursor-pointer bg-card"
+          >
+            <span className="text-ink">{t('pos_walk_in')}</span>
+            <span className="text-success font-medium">Counter Cash Sale</span>
+          </button>
 
-            <button
-              onClick={() => {
-                store.setActiveCustomer(null);
-                setShowCustomerPicker(false);
-              }}
-              className="w-full text-left p-4 rounded-2xl border border-[#FCE7F3] hover:bg-[#FEFCE8] transition font-bold text-xs flex items-center justify-between cursor-pointer"
-            >
-              <span>{t('pos_walk_in')}</span>
-              <span className="text-emerald-700 font-extrabold">Counter Cash Sale</span>
-            </button>
+          <div className="text-xs font-semibold text-ink-muted uppercase tracking-wider mt-2">Select Registered Customer:</div>
 
-            <div className="text-xs font-black text-[#632055] uppercase tracking-wider">Select Registered Customer:</div>
-
-            <div className="flex-1 overflow-y-auto space-y-2 divide-y divide-[#FCE7F3] pr-1">
-              {customers.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => {
-                    store.setActiveCustomer(c);
-                    setShowCustomerPicker(false);
-                  }}
-                  className="pt-3 pb-2 px-2.5 hover:bg-[#FFF9FA] rounded-xl cursor-pointer flex items-center justify-between transition"
-                >
-                  <div>
-                    <div className="font-black text-sm text-[#31102A]">{c.name}</div>
-                    <div className="text-xs text-[#632055] font-mono mt-0.5">{c.phone} · {c.customerType}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-black text-[#9F1239]">Due: ₹{c.totalOutstandingInr}</div>
-                  </div>
+          <div className="flex-1 overflow-y-auto space-y-1 divide-y divide-border pr-2 max-h-[50vh]">
+            {customers.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => {
+                  store.setActiveCustomer(c);
+                  setShowCustomerPicker(false);
+                }}
+                className="py-3 px-3 hover:bg-surface rounded-lg cursor-pointer flex items-center justify-between transition"
+              >
+                <div>
+                  <div className="font-semibold text-sm text-ink">{c.name}</div>
+                  <div className="text-xs text-ink-muted font-mono mt-1">{c.phone} · {c.customerType}</div>
                 </div>
+                <div className="text-right">
+                  <div className="font-mono text-sm font-semibold text-danger">Due: ₹{c.totalOutstandingInr}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Checkout Modal */}
+      <Modal
+        open={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        title="Complete Bill"
+        id="checkout"
+        size="md"
+        footer={
+          <div className="flex gap-4 w-full">
+            <button
+              type="button"
+              onClick={() => setIsCheckoutOpen(false)}
+              className="jm-btn-secondary flex-1"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              form="checkout-form"
+              disabled={paymentMode === 'Credit' && !activeCustomer}
+              className="jm-btn-primary flex-1"
+            >
+              Save Bill
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-ink-muted mb-4 -mt-2">
+          {activeCustomer ? `${activeCustomer.name} (${activeCustomer.phone})` : t('pos_walk_in')}
+        </p>
+
+        <form id="checkout-form" onSubmit={handleFinalizeBill} className="space-y-5">
+          <div className="p-5 rounded-lg bg-surface border border-border flex items-center justify-between">
+            <span className="font-semibold text-sm text-ink-muted">Amount Due:</span>
+            <span className="font-mono font-bold text-2xl text-primary">₹{grandTotal.toLocaleString('en-IN')}</span>
+          </div>
+
+          <div>
+            <div className="block text-sm font-semibold text-ink mb-3">Select Payment Method</div>
+            <div className="grid grid-cols-4 gap-3">
+              {(['Cash', 'UPI', 'Card', 'Credit'] as PaymentMethod[]).map((mode) => (
+                <button
+                  type="button"
+                  key={mode}
+                  onClick={() => setPaymentMode(mode)}
+                  className={`py-3 rounded-lg text-sm font-semibold border transition cursor-pointer ${
+                    paymentMode === mode
+                      ? 'bg-ink text-surface border-ink'
+                      : 'bg-card text-ink-muted border-border hover:bg-surface'
+                  }`}
+                >
+                  {mode}
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Checkout Modal */}
-      {isCheckoutOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 border-2 border-[#FCE7F3] shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#FCE7F3]">
-              <div>
-                <h3 className="font-black text-xl text-[#31102A]">Payment & Complete Bill</h3>
-                <p className="text-xs text-[#632055] mt-0.5">
-                  {activeCustomer ? `${activeCustomer.name} (${activeCustomer.phone})` : t('pos_walk_in')}
-                </p>
+          {paymentMode === 'Cash' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="received-amount" className="text-sm font-semibold text-ink">Received Cash (₹)</label>
+                {Number(receivedAmount) > grandTotal && (
+                  <span className="font-mono text-xs font-semibold text-success bg-success-soft px-3 py-1.5 rounded-full border border-success-soft">
+                    Change: ₹{Number(receivedAmount) - grandTotal}
+                  </span>
+                )}
               </div>
-              <button onClick={() => setIsCheckoutOpen(false)} className="text-gray-400 hover:text-black font-bold text-lg">
-                ✕
-              </button>
+              <input
+                id="received-amount"
+                type="number"
+                value={receivedAmount}
+                onChange={(e) => setReceivedAmount(e.target.value)}
+                className="jm-input text-lg font-mono"
+                autoFocus
+              />
+              <div className="flex items-center gap-2 pt-2 overflow-x-auto pb-1 scrollbar-none">
+                {[grandTotal, 100, 200, 500, 1000, 2000].map((amt, idx) => (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={() => setReceivedAmount(String(amt))}
+                    className="flex-1 py-2 px-3 rounded-lg border border-border bg-surface text-sm font-semibold text-ink hover:bg-border cursor-pointer whitespace-nowrap font-mono"
+                  >
+                    {amt === grandTotal ? 'Exact' : `₹${amt}`}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
 
-            <form onSubmit={handleFinalizeBill} className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3] flex items-center justify-between">
-                <span className="font-bold text-sm text-[#632055]">Amount Due:</span>
-                <span className="font-black text-2xl text-[#9F1239]">₹{grandTotal.toLocaleString('en-IN')}</span>
+          {paymentMode === 'UPI' && (
+            <div className="p-5 rounded-lg bg-surface border border-border text-center space-y-4">
+              <div className="flex items-center justify-center gap-2 text-sm font-semibold text-ink">
+                <QrCode size={18} className="text-primary" />
+                <span>Scan Shop UPI QR Code to Pay:</span>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-2">Select Payment Method</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(['Cash', 'UPI', 'Card', 'Credit'] as PaymentMethod[]).map((mode) => (
-                    <button
-                      type="button"
-                      key={mode}
-                      onClick={() => setPaymentMode(mode)}
-                      className={`py-3 rounded-2xl text-xs font-black border transition cursor-pointer ${
-                        paymentMode === mode
-                          ? 'bg-[#31102A] text-white border-[#31102A] shadow-xs'
-                          : 'bg-white text-[#632055] border-[#FCE7F3] hover:bg-[#FEFCE8]'
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {paymentMode === 'Cash' && (
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-[#31102A]">Received Cash (₹)</label>
-                    {Number(receivedAmount) > grandTotal && (
-                      <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                        Change: ₹{Number(receivedAmount) - grandTotal}
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    type="number"
-                    value={receivedAmount}
-                    onChange={(e) => setReceivedAmount(e.target.value)}
-                    className="jm-input !font-black !text-xl"
-                    autoFocus
-                  />
-                  <div className="flex items-center gap-2 pt-1 overflow-x-auto">
-                    {[grandTotal, 100, 200, 500, 1000, 2000].map((amt, idx) => (
-                      <button
-                        type="button"
-                        key={idx}
-                        onClick={() => setReceivedAmount(String(amt))}
-                        className="flex-1 py-2 rounded-xl border border-[#FCE7F3] bg-[#FEFCE8] text-xs font-bold text-[#31102A] hover:bg-[#FEF08A] cursor-pointer whitespace-nowrap"
-                      >
-                        {amt === grandTotal ? 'Exact' : `₹${amt}`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {paymentMode === 'UPI' && (
-                <div className="p-4 rounded-2xl bg-[#FEFCE8] border border-[#FDE047] text-center space-y-2.5">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-black text-[#31102A]">
-                    <QrCode size={16} className="text-[#9F1239]" />
-                    <span>Scan Shop UPI QR Code to Pay:</span>
-                  </div>
-                  <div className="inline-block p-2 bg-white rounded-2xl border-2 border-[#FDE047] shadow-sm">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`upi://pay?pa=nikhilkimasti2409@okaxis&pn=Joshi%20Mangodi%20Udyog&am=${grandTotal}&cu=INR`)}`}
-                      alt="UPI QR Code"
-                      className="w-32 h-32 mx-auto rounded-lg"
-                    />
-                  </div>
-                  <div className="text-xs font-mono font-bold text-emerald-900 bg-emerald-50 py-1.5 px-3 rounded-xl border border-emerald-200">
-                    UPI ID: <strong>nikhilkimasti2409@okaxis</strong>
-                  </div>
-                  <div className="text-[11px] text-[#632055]">
-                    Amount: <strong className="text-[#9F1239] font-black">₹{grandTotal}</strong> · Auto verified at counter
-                  </div>
-                </div>
-              )}
-
-              {paymentMode === 'Credit' && (
-                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-800 font-semibold space-y-1">
-                  {activeCustomer ? (
-                    <>
-                      <div className="font-bold text-red-950">Khata Due Credit Account</div>
-                      <div>₹{grandTotal} will be added to <strong>{activeCustomer.name}</strong>'s outstanding balance.</div>
-                    </>
-                  ) : (
-                    <div className="text-red-900 font-black">
-                      ⚠️ Customer selection required to record credit / Khata bill!
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Notes (Optional)</label>
-                <input
-                  type="text"
-                  value={orderNotes}
-                  onChange={(e) => setOrderNotes(e.target.value)}
-                  placeholder="e.g. Special packaging requested"
-                  className="jm-input !text-xs"
+              <div className="inline-block p-3 bg-card rounded-lg border border-border shadow-sm">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`upi://pay?pa=nikhilkimasti2409@okaxis&pn=Joshi%20Mangodi%20Udyog&am=${grandTotal}&cu=INR`)}`}
+                  alt="UPI QR Code"
+                  className="w-32 h-32 mx-auto rounded"
                 />
               </div>
-
-              <div className="flex gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCheckoutOpen(false)}
-                  className="jm-btn-secondary flex-1"
-                >
-                  {t('cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={paymentMode === 'Credit' && !activeCustomer}
-                  className="jm-btn-primary flex-1 !font-black !text-base shadow-md"
-                >
-                  Save Bill
-                </button>
+              <div className="text-sm font-mono font-medium text-ink bg-card py-2 px-4 rounded-lg border border-border">
+                UPI ID: <strong>nikhilkimasti2409@okaxis</strong>
               </div>
-            </form>
+              <div className="text-xs text-ink-muted">
+                Amount: <strong className="text-ink font-mono font-bold">₹{grandTotal}</strong> · Auto verified at counter
+              </div>
+            </div>
+          )}
+
+          {paymentMode === 'Credit' && (
+            <div className="p-4 rounded-lg bg-danger-soft border border-danger-soft text-sm text-danger font-medium space-y-2">
+              {activeCustomer ? (
+                <>
+                  <div className="font-bold">Khata Due Credit Account</div>
+                  <div>₹{grandTotal} will be added to <strong>{activeCustomer.name}</strong>'s outstanding balance.</div>
+                </>
+              ) : (
+                <div className="font-semibold">
+                  ⚠️ Customer selection required to record credit / Khata bill!
+                </div>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="order-notes" className="block text-sm font-semibold text-ink mb-2">Notes (Optional)</label>
+            <input
+              id="order-notes"
+              type="text"
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+              placeholder="e.g. Special packaging requested"
+              className="jm-input"
+            />
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Void Bill Confirmation Modal */}
-      {voidModalOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-red-200 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-red-100 pb-3">
-              <div className="font-black text-lg text-red-950">Void & Restock Bill</div>
-              <button onClick={() => setVoidModalOrder(null)} className="text-gray-400 hover:text-black font-bold">
-                ✕
-              </button>
+      <Modal
+        open={!!voidModalOrder}
+        onClose={() => setVoidModalOrder(null)}
+        title={<span className="text-danger">Void & Restock Bill</span>}
+        id="void-bill"
+        size="sm"
+        footer={
+          <div className="flex gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setVoidModalOrder(null)}
+              className="jm-btn-secondary flex-1"
+            >
+              Keep Bill
+            </button>
+            <button
+              type="submit"
+              form="void-bill-form"
+              className="jm-btn-danger flex-1"
+            >
+              Confirm Void
+            </button>
+          </div>
+        }
+      >
+        {voidModalOrder && (
+          <div className="space-y-5">
+            <div className="text-sm text-ink-muted space-y-2">
+              <div>Are you sure you want to void Bill <strong className="text-ink font-mono">{voidModalOrder.billNo}</strong>?</div>
+              <div>Amount: <strong className="text-danger font-mono font-semibold">₹{voidModalOrder.grandTotalInr}</strong> · Customer: <strong className="text-ink">{voidModalOrder.customerName}</strong></div>
+              <div className="text-xs text-ink-faint pt-2">All {voidModalOrder.items.length} items will be automatically returned to stock.</div>
             </div>
 
-            <div className="text-xs text-[#632055] space-y-1">
-              <div>Are you sure you want to void Bill <strong className="text-[#31102A]">{voidModalOrder.billNo}</strong>?</div>
-              <div>Amount: <strong className="text-red-700 font-bold">₹{voidModalOrder.grandTotalInr}</strong> · Customer: <strong>{voidModalOrder.customerName}</strong></div>
-              <div className="text-[11px] text-gray-500 pt-1">All {voidModalOrder.items.length} items will be automatically returned to stock.</div>
-            </div>
-
-            <form onSubmit={handleVoidSubmit} className="space-y-3">
+            <form id="void-bill-form" onSubmit={handleVoidSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Reason for Cancellation *</label>
+                <label htmlFor="void-reason" className="block text-sm font-semibold text-ink mb-2">Reason for Cancellation *</label>
                 <input
+                  id="void-reason"
                   type="text"
                   required
                   autoFocus
                   value={voidReason}
                   onChange={(e) => setVoidReason(e.target.value)}
                   placeholder="e.g. Customer cancelled order / Billing mistake"
-                  className="jm-input !text-xs"
+                  className="jm-input w-full"
                 />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setVoidModalOrder(null)}
-                  className="jm-btn-secondary flex-1 !text-xs"
-                >
-                  Keep Bill
-                </button>
-                <button
-                  type="submit"
-                  className="jm-btn-primary flex-1 !text-xs !bg-red-700 hover:!bg-red-800 !text-white !border-red-800 !font-black"
-                >
-                  Confirm Void
-                </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Printable Thermal Receipt Modal */}
-      {isReceiptModalOpen && completedOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-[#FCE7F3] shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#FCE7F3] no-print">
-              <div className="flex items-center gap-2 text-emerald-700 font-black text-sm">
-                <CheckCircle2 size={20} />
-                <span>Bill Generated Successfully!</span>
-              </div>
-              <button onClick={() => setIsReceiptModalOpen(false)} className="text-gray-400 hover:text-black font-bold">
-                ✕
+      <Modal
+        open={isReceiptModalOpen}
+        onClose={() => { setIsReceiptModalOpen(false); setCompletedOrder(null); }}
+        title={
+          <div className="flex items-center gap-2 text-success font-bold text-base">
+            <CheckCircle2 size={20} />
+            <span>Bill Generated Successfully!</span>
+          </div>
+        }
+        id="receipt"
+        size="md"
+        footer={
+          <div className="flex flex-col gap-3 w-full no-print">
+            <div className="flex gap-4 w-full">
+              <button
+                onClick={() => window.print()}
+                className="jm-btn-secondary flex-1 flex items-center justify-center gap-2"
+              >
+                <Printer size={16} /> Print Receipt
               </button>
+              {completedOrder && (
+                <a
+                  href={generateWhatsAppLink(completedOrder)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="jm-btn-primary flex-1 flex items-center justify-center gap-2 !bg-success hover:!bg-success-soft hover:!text-success !text-white !border-success"
+                >
+                  <Share2 size={16} /> Send WhatsApp
+                </a>
+              )}
             </div>
-
+            <button
+              onClick={() => { setIsReceiptModalOpen(false); setCompletedOrder(null); }}
+              className="w-full py-3 rounded-lg bg-ink text-surface text-sm font-semibold hover:bg-ink-muted cursor-pointer transition"
+            >
+              Start Next Bill
+            </button>
+          </div>
+        }
+      >
+        {completedOrder && (
+          <div className="space-y-5">
             {/* Thermal Print Slip with ID for Clean Browser Printing */}
             <div
               id="printable-receipt"
-              className="receipt-thermal bg-white border border-gray-200 rounded-2xl p-5 font-mono text-xs text-black shadow-inner space-y-2.5"
+              className="receipt-thermal jm-card p-5 font-mono text-xs text-ink shadow-inner space-y-3"
             >
-              <div className="text-center pb-2.5 border-b border-dashed border-gray-400">
-                <h2 className="font-extrabold text-base tracking-wider text-black">JOSHI MANGODI UDYOG</h2>
-                <p className="text-[11px] font-medium text-gray-700">Pure Handmade Moong Dal Mangodi</p>
-                <p className="text-[10px] text-gray-600">Near Head Post Office, Fatehpur, Sikar (Raj.)</p>
-                <p className="text-[10px] text-gray-600">Mob: +91 98290 12345 | GSTIN: 08AABFJ1234F1Z5</p>
-                <p className="text-[11px] font-black mt-1.5 uppercase tracking-wide">*** TAX INVOICE ***</p>
+              <div className="text-center pb-3 border-b border-dashed border-border">
+                <h2 className="font-bold text-base tracking-wider text-ink">JOSHI MANGODI UDYOG</h2>
+                <p className="text-[11px] font-medium text-ink-muted">Pure Handmade Moong Dal Mangodi</p>
+                <p className="text-[10px] text-ink-faint">Near Head Post Office, Fatehpur, Sikar (Raj.)</p>
+                <p className="text-[10px] text-ink-faint">Mob: +91 98290 12345 | GSTIN: 08AABFJ1234F1Z5</p>
+                <p className="text-[11px] font-bold mt-2 uppercase tracking-wide">*** TAX INVOICE ***</p>
               </div>
 
-              <div className="py-2 border-b border-dashed border-gray-400 text-[11px] space-y-0.5">
+              <div className="py-2.5 border-b border-dashed border-border text-[11px] space-y-1">
                 <div className="flex justify-between">
                   <span>Bill No: <strong>{completedOrder.billNo}</strong></span>
                   <span>{completedOrder.date}</span>
@@ -1008,14 +1043,14 @@ export default function POSPage() {
                 {completedOrder.customerGstin && <div>GSTIN: {completedOrder.customerGstin}</div>}
               </div>
 
-              <div className="py-2 border-b border-dashed border-gray-400">
-                <div className="flex justify-between font-bold pb-1 text-[10px] uppercase text-gray-700">
+              <div className="py-2.5 border-b border-dashed border-border">
+                <div className="flex justify-between font-bold pb-2 text-[10px] uppercase text-ink-muted">
                   <span>Item</span>
                   <span>Qty x Rate</span>
                   <span className="text-right">Amt</span>
                 </div>
                 {completedOrder.items.map((it, idx) => (
-                  <div key={idx} className="flex justify-between py-0.5 text-[11px]">
+                  <div key={idx} className="flex justify-between py-1 text-[11px]">
                     <span className="truncate max-w-[130px] font-medium">{it.skuName}</span>
                     <span>{it.quantity} x ₹{it.unitPriceInr}</span>
                     <span className="font-bold text-right">₹{it.totalInr}</span>
@@ -1023,13 +1058,13 @@ export default function POSPage() {
                 ))}
               </div>
 
-              <div className="py-2 border-b border-dashed border-gray-400 text-[11px] space-y-1">
+              <div className="py-2.5 border-b border-dashed border-border text-[11px] space-y-1.5">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
                   <span>₹{completedOrder.subtotalInr}</span>
                 </div>
                 {completedOrder.discountInr > 0 && (
-                  <div className="flex justify-between text-emerald-800">
+                  <div className="flex justify-between text-success">
                     <span>Discount:</span>
                     <span>-₹{completedOrder.discountInr}</span>
                   </div>
@@ -1038,7 +1073,7 @@ export default function POSPage() {
                   <span>GST (Included):</span>
                   <span>₹{completedOrder.gstAmountInr}</span>
                 </div>
-                <div className="flex justify-between font-extrabold text-sm pt-1.5 border-t border-gray-300">
+                <div className="flex justify-between font-bold text-sm pt-2 border-t border-border">
                   <span>GRAND TOTAL:</span>
                   <span>₹{completedOrder.grandTotalInr}</span>
                 </div>
@@ -1047,13 +1082,13 @@ export default function POSPage() {
                   <span>₹{completedOrder.amountPaidInr}</span>
                 </div>
                 {completedOrder.changeDueInr > 0 && (
-                  <div className="flex justify-between text-[11px] font-bold text-emerald-900">
+                  <div className="flex justify-between text-[11px] font-bold text-success">
                     <span>Change Returned:</span>
                     <span>₹{completedOrder.changeDueInr}</span>
                   </div>
                 )}
                 {completedOrder.creditAddedInr > 0 && (
-                  <div className="flex justify-between text-[11px] font-black text-red-800">
+                  <div className="flex justify-between text-[11px] font-bold text-danger">
                     <span>Balance Due on Khata:</span>
                     <span>₹{completedOrder.creditAddedInr}</span>
                   </div>
@@ -1062,51 +1097,27 @@ export default function POSPage() {
 
               {/* Dynamic UPI QR Code on Printed Receipt if Balance is Due */}
               {completedOrder.creditAddedInr > 0 && (
-                <div className="py-2.5 border-b border-dashed border-gray-400 text-center space-y-1.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-800">
+                <div className="py-3 border-b border-dashed border-border text-center space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-ink">
                     Scan to Pay Due Balance (₹{completedOrder.creditAddedInr}):
                   </p>
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(`upi://pay?pa=nikhilkimasti2409@okaxis&pn=Joshi%20Mangodi%20Udyog&am=${completedOrder.creditAddedInr}&cu=INR`)}`}
                     alt="UPI Due QR Code"
-                    className="w-24 h-24 mx-auto border p-1 bg-white"
+                    className="w-24 h-24 mx-auto border border-border p-1 bg-card rounded"
                   />
-                  <p className="text-[9px] font-mono text-gray-700">UPI ID: nikhilkimasti2409@okaxis</p>
+                  <p className="text-[9px] font-mono text-ink-muted">UPI ID: nikhilkimasti2409@okaxis</p>
                 </div>
               )}
 
-              <div className="text-center pt-2 text-[10px] text-gray-600">
+              <div className="text-center pt-3 text-[10px] text-ink-faint">
                 <p className="font-bold">Thank you for your visit!</p>
                 <p>Traditional Handmade Taste of Rajasthan</p>
               </div>
             </div>
-
-            <div className="flex gap-3 pt-2 no-print">
-              <button
-                onClick={() => window.print()}
-                className="jm-btn-secondary flex-1 !text-xs !py-3 flex items-center justify-center gap-1.5 shadow-xs"
-              >
-                <Printer size={16} /> Print Receipt
-              </button>
-              <a
-                href={generateWhatsAppLink(completedOrder)}
-                target="_blank"
-                rel="noreferrer"
-                className="jm-btn-primary flex-1 !text-xs !py-3 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white !border-emerald-700 shadow-md"
-              >
-                <Share2 size={16} /> Send WhatsApp
-              </a>
-            </div>
-
-            <button
-              onClick={() => setIsReceiptModalOpen(false)}
-              className="w-full py-3 rounded-2xl bg-[#31102A] text-white text-xs font-black hover:bg-black cursor-pointer no-print transition shadow-sm"
-            >
-              Start Next Bill
-            </button>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

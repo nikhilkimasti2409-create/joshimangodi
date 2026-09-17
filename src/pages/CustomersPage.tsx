@@ -1,4 +1,9 @@
 import { useState, useMemo } from 'react';
+import Modal from '../components/common/Modal';
+import EmptyState from '../components/common/EmptyState';
+import StatusBadge from '../components/common/StatusBadge';
+import PageHeader from '../components/common/PageHeader';
+
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -319,61 +324,51 @@ export default function CustomersPage() {
 
   return (
     <div className="min-h-[calc(100vh-120px)] pb-32 md:pb-12">
-      {/* Top Stats Banner */}
-      <div className="bg-white border-b border-[#FCE7F3] px-3 sm:px-4 py-3 sm:py-4">
-        <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#31102A]">
-              Customer Khata Directory & Ledgers
-            </h1>
-            <p className="text-xs text-[#632055]">
-              {customers.length} registered customers · Real-time order movements, payment receipts & editable contact profiles
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-            {/* Total Outstanding Card */}
-            <div className="bg-[#FFF9FA] border border-[#FCE7F3] px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl flex items-center gap-2 sm:gap-3 flex-1 sm:flex-none shadow-xs">
-              <div>
-                <div className="text-[10px] uppercase font-bold text-[#632055] tracking-wider">
-                  Total Outstanding Khata
-                </div>
-                <div className="text-base sm:text-lg font-black text-[#9F1239]">
-                  ₹{totalOutstandingAll.toLocaleString('en-IN')}
-                </div>
-              </div>
-            </div>
-
-            {/* Import Button */}
-            <button
-              onClick={() => setIsImportModalOpen(true)}
-              className="jm-btn-secondary !text-xs !min-h-[38px] flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <UploadCloud size={15} />
-              <span className="hidden sm:inline">Import Contacts</span>
-              <span className="sm:hidden">Import</span>
-            </button>
-
-            {/* Export Button */}
-            <button
-              onClick={exportCustomersCSV}
-              className="jm-btn-secondary !text-xs !min-h-[38px] flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <Download size={15} />
-              <span className="hidden sm:inline">Export CSV</span>
-              <span className="sm:hidden">Export</span>
-            </button>
-
-            {/* Add New Customer Button */}
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 pt-4 pb-0">
+        <PageHeader
+          title="Customer Khata Directory & Ledgers"
+          description={`${customers.length} registered customers · Real-time order movements, payment receipts & editable contact profiles`}
+          primaryAction={
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="jm-btn-primary !text-xs !min-h-[38px] !font-extrabold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="jm-btn-primary flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <UserPlus size={15} />
               <span>+ Add Customer</span>
             </button>
-          </div>
-        </div>
+          }
+          secondaryActions={
+            <>
+              {/* Total Outstanding Card */}
+              <div className="bg-card border border-border rounded-xl p-2 sm:p-3 flex items-center gap-4">
+                <div>
+                  <div className="text-[11px] uppercase font-bold text-ink-muted tracking-wider">
+                    Total Outstanding Khata
+                  </div>
+                  <div className="text-sm font-bold text-danger font-mono">
+                    ₹{totalOutstandingAll.toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="jm-btn-secondary flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <UploadCloud size={15} />
+                <span className="hidden sm:inline">Import Contacts</span>
+                <span className="sm:hidden">Import</span>
+              </button>
+              <button
+                onClick={exportCustomersCSV}
+                className="jm-btn-secondary flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Download size={15} />
+                <span className="hidden sm:inline">Export CSV</span>
+                <span className="sm:hidden">Export</span>
+              </button>
+            </>
+          }
+        />
       </div>
 
       {/* Main Content Layout */}
@@ -384,13 +379,13 @@ export default function CustomersPage() {
             {/* Filters and Search */}
             <div className="jm-card p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white shadow-xs">
               <div className="relative flex-1">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#632055]" />
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search name, phone or area..."
-                  className="jm-input !pl-9 !text-xs !min-h-[38px]"
+                  className="jm-input !pl-9 "
                 />
               </div>
 
@@ -404,11 +399,7 @@ export default function CustomersPage() {
                   <button
                     key={f.id}
                     onClick={() => setFilterType(f.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-                      filterType === f.id
-                        ? 'bg-[#31102A] text-white shadow-xs'
-                        : 'bg-[#FFF9FA] text-[#632055] border border-[#FCE7F3] hover:bg-[#FEFCE8]'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${ filterType === f.id ? 'bg-primary text-white' : 'bg-card border-border text-ink-muted hover:bg-primary-soft hover:text-primary' }`}
                   >
                     {f.label}
                   </button>
@@ -419,11 +410,7 @@ export default function CustomersPage() {
             {/* Customers List Cards */}
             <div className="space-y-2.5">
               {filteredCustomers.length === 0 ? (
-                <div className="jm-card p-12 text-center text-[#632055] bg-white">
-                  <Users size={40} className="mx-auto mb-2 opacity-40" />
-                  <p className="font-bold text-sm">No customers match criteria</p>
-                  <p className="text-xs text-gray-500 mt-1">Try clearing search or add a new customer.</p>
-                </div>
+                <EmptyState icon={Users} title="No customers match criteria" description="Try clearing search or add a new customer." />
               ) : (
                 filteredCustomers.map((cust) => {
                   const isSelected = selectedCustomerId === cust.id;
@@ -433,28 +420,20 @@ export default function CustomersPage() {
                     <div
                       key={cust.id}
                       onClick={() => setSelectedCustomerId(cust.id)}
-                      className={`jm-card p-3.5 sm:p-4 transition cursor-pointer hover:border-[#E5B6D3] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs ${
-                        isSelected ? 'border-2 border-[#31102A] bg-[#FFF9FA]' : 'bg-white'
-                      }`}
+                      className={`bg-card border rounded-lg p-5 sm:p-6 transition cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${ isSelected ? 'border-primary bg-primary-soft' : 'bg-card border-border' }`}
                     >
                       <div className="flex items-start gap-3 min-w-0">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 ${
-                            cust.customerType === 'wholesale'
-                              ? 'bg-[#FEF08A] text-[#31102A] border border-[#FDE047]'
-                              : 'bg-[#FBCFE8] text-[#31102A] border border-[#E5B6D3]'
-                          }`}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-sm shrink-0 ${ cust.customerType === 'wholesale' ? 'bg-warning-soft text-warning' : 'bg-primary-soft text-primary' }`}
                         >
                           {cust.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-extrabold text-xs sm:text-sm text-[#31102A] truncate">{cust.name}</h3>
-                            <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded-md bg-[#FFF9FA] border border-[#FCE7F3] text-[#632055]">
-                              {cust.customerType}
-                            </span>
+                            <h3 className="font-semibold text-xs sm:text-sm text-ink truncate">{cust.name}</h3>
+                            <StatusBadge variant={cust.customerType === "wholesale" ? "warning" : "info"} label={cust.customerType} />
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-[#632055] mt-0.5 flex-wrap">
+                          <div className="flex items-center gap-3 text-sm text-ink-muted mt-0.5 flex-wrap">
                             <span className="flex items-center gap-1 font-mono font-medium text-[11px]">
                               <Phone size={11} /> +91 {cust.phone}
                             </span>
@@ -468,13 +447,11 @@ export default function CustomersPage() {
                       </div>
 
                       {/* Right: Balance & Action Buttons (Details, Edit, Open Bill) */}
-                      <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#FCE7F3]">
+                      <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
                         <div className="text-left sm:text-right mr-1">
-                          <div className="text-[9px] text-gray-500 uppercase font-bold">Outstanding</div>
+                          <div className="text-[11px] text-ink-muted uppercase font-bold">Outstanding</div>
                           <div
-                            className={`text-sm font-black ${
-                              hasDue ? 'text-[#9F1239]' : 'text-emerald-700'
-                            }`}
+                            className={`text-sm font-bold font-mono ${ hasDue ? 'text-danger' : 'text-success' }`}
                           >
                             ₹{cust.totalOutstandingInr.toLocaleString('en-IN')}
                           </div>
@@ -486,10 +463,10 @@ export default function CustomersPage() {
                             e.stopPropagation();
                             handleOpenDetailsModal(cust);
                           }}
-                          className="px-2.5 py-1.5 rounded-xl border border-[#FCE7F3] hover:bg-[#FEFCE8] text-[#31102A] font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-xl border border-border hover:bg-warning-soft text-ink font-bold text-xs flex items-center gap-1 transition cursor-pointer"
                           title="View Movements & Statement"
                         >
-                          <Eye size={13} className="text-[#9F1239]" />
+                          <Eye size={13} className="text-danger" />
                           <span>Details</span>
                         </button>
 
@@ -499,10 +476,10 @@ export default function CustomersPage() {
                             e.stopPropagation();
                             handleOpenEditModal(cust);
                           }}
-                          className="px-2.5 py-1.5 rounded-xl border border-[#FCE7F3] hover:bg-[#FEF08A] text-[#31102A] font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-xl border border-border hover:bg-warning-soft text-ink font-bold text-xs flex items-center gap-1 transition cursor-pointer"
                           title="Edit Name, Phone, Address"
                         >
-                          <Edit3 size={13} className="text-[#632055]" />
+                          <Edit3 size={13} className="text-ink-muted" />
                           <span>Edit</span>
                         </button>
 
@@ -512,7 +489,7 @@ export default function CustomersPage() {
                             e.stopPropagation();
                             handleOpenBillForCustomer(cust);
                           }}
-                          className="jm-btn-primary !min-h-[32px] !text-xs !py-1 !px-2.5 shrink-0 flex items-center gap-1 shadow-xs"
+                          className="jm-btn-primary shrink-0 flex items-center gap-1 shadow-xs"
                           title="Open Bill in POS"
                         >
                           <ShoppingBag size={13} />
@@ -529,29 +506,29 @@ export default function CustomersPage() {
           {/* Right: Selected Customer Profile & Khata Ledger (5 cols) */}
           <div className="lg:col-span-5">
             {selectedCustomer ? (
-              <div className="jm-card p-4 sm:p-5 sticky top-[135px] bg-white shadow-md space-y-3.5">
-                <div className="flex items-start justify-between border-b border-[#FCE7F3] pb-3">
+              <div className="jm-card p-6 sticky top-[135px] space-y-4">
+                <div className="flex items-start justify-between border-b border-border pb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base sm:text-lg font-black text-[#31102A]">{selectedCustomer.name}</h2>
-                      <span className="text-[10px] uppercase font-bold bg-[#FEF08A] text-[#31102A] px-2 py-0.5 rounded-md">
+                      <h2 className="text-base sm:text-lg font-bold text-ink">{selectedCustomer.name}</h2>
+                      <span className="text-[11px] uppercase font-bold bg-warning-soft text-warning px-2 py-0.5 rounded-md">
                         {selectedCustomer.customerType}
                       </span>
                     </div>
-                    <p className="text-xs font-mono text-[#632055] mt-0.5">+91 {selectedCustomer.phone}</p>
+                    <p className="text-xs font-mono text-ink-muted mt-0.5">+91 {selectedCustomer.phone}</p>
                     {selectedCustomer.area && (
-                      <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-1">
+                      <p className="text-xs text-ink-muted mt-0.5 flex items-center gap-1">
                         <MapPin size={11} /> {selectedCustomer.area}
                       </p>
                     )}
                     {selectedCustomer.gstin && (
-                      <p className="text-[11px] font-mono text-gray-500 mt-0.5">GSTIN: {selectedCustomer.gstin}</p>
+                      <p className="text-[11px] font-mono text-ink-muted mt-0.5">GSTIN: {selectedCustomer.gstin}</p>
                     )}
                   </div>
 
                   <button
                     onClick={() => handleOpenEditModal(selectedCustomer)}
-                    className="p-2 rounded-xl border border-[#FCE7F3] hover:bg-[#FEFCE8] text-[#31102A] cursor-pointer"
+                    className="p-2 rounded-xl border border-border hover:bg-warning-soft text-ink cursor-pointer"
                     title="Edit Customer Profile"
                   >
                     <Edit3 size={15} />
@@ -559,16 +536,16 @@ export default function CustomersPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div className="p-3 rounded-xl bg-[#FFF9FA] border border-[#FCE7F3]">
-                    <div className="text-[10px] uppercase font-bold text-[#632055]">Outstanding Due</div>
-                    <div className="text-base sm:text-lg font-black text-[#9F1239]">
+                  <div className="p-3 rounded-xl bg-surface border border-border">
+                    <div className="text-[11px] uppercase font-bold text-ink-muted">Outstanding Due</div>
+                    <div className="text-base sm:text-lg font-bold text-danger font-mono">
                       ₹{selectedCustomer.totalOutstandingInr.toLocaleString('en-IN')}
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#FEFCE8] border border-[#FDE047]">
-                    <div className="text-[10px] uppercase font-bold text-[#632055]">Lifetime Value</div>
-                    <div className="text-base sm:text-lg font-black text-[#31102A]">
+                  <div className="p-3 rounded-xl bg-warning-soft border border-warning-soft">
+                    <div className="text-[11px] uppercase font-bold text-ink-muted">Lifetime Value</div>
+                    <div className="text-base sm:text-lg font-bold text-ink">
                       ₹{selectedCustomer.lifetimeValueInr.toLocaleString('en-IN')}
                     </div>
                   </div>
@@ -577,7 +554,7 @@ export default function CustomersPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsPaymentModalOpen(true)}
-                    className="jm-btn-primary flex-1 !text-xs !py-2.5 flex items-center justify-center gap-1.5"
+                    className="jm-btn-primary flex-1 flex items-center justify-center gap-1.5"
                   >
                     <Plus size={15} />
                     <span>Record Payment</span>
@@ -585,7 +562,7 @@ export default function CustomersPage() {
 
                   <button
                     onClick={() => handleOpenDetailsModal(selectedCustomer)}
-                    className="jm-btn-secondary flex-1 !text-xs !py-2.5 flex items-center justify-center gap-1.5"
+                    className="jm-btn-secondary flex-1 flex items-center justify-center gap-1.5"
                   >
                     <Eye size={15} />
                     <span>View Statement</span>
@@ -596,8 +573,8 @@ export default function CustomersPage() {
                       href={generateKhataWhatsApp(selectedCustomer)}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2.5 rounded-2xl border border-emerald-300 text-emerald-800 hover:bg-emerald-50 flex items-center justify-center"
-                      title="Send WhatsApp Reminder"
+                      className="p-2.5 rounded-xl border border-success-soft text-success hover:bg-success-soft flex items-center justify-center"
+                      title="Send WhatsApp Reminder" aria-label="Send WhatsApp Reminder"
                     >
                       <Share2 size={16} />
                     </a>
@@ -606,31 +583,31 @@ export default function CustomersPage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-extrabold uppercase text-[#632055] tracking-wider">
+                    <h3 className="text-xs font-semibold uppercase text-ink-muted tracking-wider">
                       Recent Ledger Movements
                     </h3>
-                    <span className="text-[10px] text-gray-500">{selectedLedger.length} records</span>
+                    <span className="text-[11px] text-ink-muted">{selectedLedger.length} records</span>
                   </div>
 
-                  <div className="max-h-[260px] overflow-y-auto divide-y divide-[#FCE7F3] pr-1">
+                  <div className="max-h-[260px] overflow-y-auto divide-y divide-border pr-1">
                     {selectedLedger.length === 0 ? (
-                      <div className="py-8 text-center text-xs text-[#632055]">
+                      <div className="py-8 text-center text-sm text-ink-muted">
                         No Khata transactions for this customer yet.
                       </div>
                     ) : (
                       selectedLedger.map((item) => (
                         <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
                           <div>
-                            <div className="font-bold text-[#31102A]">{item.description}</div>
-                            <div className="text-[10px] text-gray-500">{item.date} · {item.paymentMethod}</div>
+                            <div className="font-bold text-ink">{item.description}</div>
+                            <div className="text-[11px] text-ink-muted">{item.date} · {item.paymentMethod}</div>
                           </div>
                           <div className="text-right">
                             {item.type === 'ORDER' ? (
-                              <div className="font-black text-red-700">
+                              <div className={`font-bold ${item.creditAddedInr > 0 ? 'text-danger' : 'text-success'}`}>
                                 {item.creditAddedInr > 0 ? `+₹${item.creditAddedInr} (Due)` : `₹${item.grandTotalInr} (Paid)`}
                               </div>
                             ) : (
-                              <div className="font-black text-emerald-700">-₹{item.amountInr} (Paid)</div>
+                              <div className="font-bold text-success">-₹{item.amountInr} (Paid)</div>
                             )}
                           </div>
                         </div>
@@ -640,10 +617,10 @@ export default function CustomersPage() {
                 </div>
               </div>
             ) : (
-              <div className="jm-card p-10 text-center text-[#632055] bg-white">
+              <div className="jm-card p-10 text-center text-ink-muted bg-white">
                 <Users size={36} className="mx-auto mb-2 opacity-40" />
                 <p className="font-bold text-sm">Select a customer to view ledger</p>
-                <p className="text-xs text-gray-500 mt-1">Click on any customer in the list on the left.</p>
+                <p className="text-xs text-ink-muted mt-1">Click on any customer in the list on the left.</p>
               </div>
             )}
           </div>
@@ -651,119 +628,138 @@ export default function CustomersPage() {
       </div>
 
       {/* Customer Full Movement & Statement Modal */}
-      {isDetailsModalOpen && activeDetailsCust && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 border-2 border-[#FCE7F3] shadow-2xl max-h-[90vh] flex flex-col space-y-4 overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-[#FCE7F3] pb-3 shrink-0">
+      <Modal
+        id="customer-statement"
+        open={isDetailsModalOpen && Boolean(activeDetailsCust)}
+        onClose={() => setIsDetailsModalOpen(false)}
+        title={activeDetailsCust?.name || ''}
+        size="2xl"
+        footer={
+          activeDetailsCust && (
+            <div className="flex flex-wrap items-center justify-between w-full gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  className="jm-btn-primary flex items-center gap-1.5"
+                >
+                  <Plus size={15} />
+                  <span>Record Payment</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if(activeDetailsCust) handleOpenBillForCustomer(activeDetailsCust);
+                    setIsDetailsModalOpen(false);
+                  }}
+                  className="jm-btn-secondary flex items-center gap-1.5"
+                >
+                  <ShoppingBag size={15} />
+                  <span>Create Bill</span>
+                </button>
+              </div>
+              {activeDetailsCust.totalOutstandingInr > 0 && (
+                <a
+                  href={generateKhataWhatsApp(activeDetailsCust)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="jm-btn-secondary flex items-center gap-1.5 text-success border-success-soft hover:bg-success-soft"
+                >
+                  <Share2 size={15} />
+                  <span>WhatsApp Reminder</span>
+                </a>
+              )}
+            </div>
+          )
+        }
+      >
+        {activeDetailsCust && (
+          <div className="flex flex-col space-y-4 pt-1">
+            {/* Custom Info Row */}
+            <div className="flex items-start justify-between">
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-black text-lg sm:text-xl text-[#31102A] truncate">
-                    {activeDetailsCust.name}
-                  </h2>
-                  <span className="text-[10px] uppercase font-bold bg-[#FEF08A] text-[#31102A] px-2 py-0.5 rounded-md shrink-0">
-                    {activeDetailsCust.customerType}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-[#632055] mt-1 flex-wrap font-mono">
+                <StatusBadge variant={activeDetailsCust.customerType === "wholesale" ? "warning" : "info"} label={activeDetailsCust.customerType} />
+                <div className="flex items-center gap-3 text-sm text-ink-muted mt-2 flex-wrap font-mono">
                   <span>Phone: +91 {activeDetailsCust.phone}</span>
                   {activeDetailsCust.area && <span>Area: {activeDetailsCust.area}</span>}
                   {activeDetailsCust.gstin && <span>GSTIN: {activeDetailsCust.gstin}</span>}
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => {
-                    handleOpenEditModal(activeDetailsCust);
-                  }}
-                  className="p-2 rounded-xl border border-[#FCE7F3] hover:bg-[#FEFCE8] text-[#31102A] text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  title="Edit Customer"
-                >
-                  <Edit3 size={14} />
-                  <span className="hidden sm:inline">Edit Details</span>
-                </button>
-                <button
-                  onClick={() => setIsDetailsModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold hover:bg-gray-200 cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
+              <button
+                onClick={() => handleOpenEditModal(activeDetailsCust)}
+                className="p-2 rounded-xl border border-border hover:bg-warning-soft text-ink text-xs font-bold flex items-center gap-1 cursor-pointer"
+                title="Edit Customer"
+              >
+                <Edit3 size={14} />
+                <span className="hidden sm:inline">Edit Details</span>
+              </button>
             </div>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
-              <div className="p-3 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3]">
-                <div className="text-[10px] uppercase font-bold text-[#632055]">Current Outstanding</div>
-                <div className="text-base sm:text-lg font-black text-[#9F1239] mt-0.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0 pt-2">
+              <div className="p-3 rounded-xl bg-surface border border-border">
+                <div className="text-[11px] uppercase font-bold text-ink-muted">Current Outstanding</div>
+                <div className="text-base sm:text-lg font-bold text-danger font-mono mt-0.5">
                   ₹{activeDetailsCust.totalOutstandingInr.toLocaleString('en-IN')}
                 </div>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#FEFCE8] border border-[#FDE047]">
-                <div className="text-[10px] uppercase font-bold text-[#632055]">Lifetime Purchases</div>
-                <div className="text-base sm:text-lg font-black text-[#31102A] mt-0.5">
+              <div className="p-3 rounded-xl bg-warning-soft border border-warning-soft">
+                <div className="text-[11px] uppercase font-bold text-ink-muted">Lifetime Purchases</div>
+                <div className="text-base sm:text-lg font-bold font-mono text-ink mt-0.5">
                   ₹{activeDetailsCust.lifetimeValueInr.toLocaleString('en-IN')}
                 </div>
               </div>
 
-              <div className="p-3 rounded-2xl bg-white border border-[#FCE7F3]">
-                <div className="text-[10px] uppercase font-bold text-[#632055]">Credit Limit</div>
-                <div className="text-base sm:text-lg font-black text-gray-800 mt-0.5">
+              <div className="p-3 rounded-xl bg-card border border-border">
+                <div className="text-[11px] uppercase font-bold text-ink-muted">Credit Limit</div>
+                <div className="text-base sm:text-lg font-bold text-ink mt-0.5">
                   ₹{(activeDetailsCust.creditLimitInr || 5000).toLocaleString('en-IN')}
                 </div>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200">
-                <div className="text-[10px] uppercase font-bold text-emerald-800">Total Bills</div>
-                <div className="text-base sm:text-lg font-black text-emerald-950 mt-0.5">
+              <div className="p-3 rounded-xl bg-success-soft border border-success-soft">
+                <div className="text-[11px] uppercase font-bold text-success">Total Bills</div>
+                <div className="text-base sm:text-lg font-bold text-success mt-0.5">
                   {activeDetailsCust.totalOrdersCount} orders
                 </div>
               </div>
             </div>
 
             {/* Movements / Chronological Statement */}
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase text-[#31102A] tracking-wider flex items-center gap-1.5">
-                  <FileText size={15} className="text-[#9F1239]" />
+            <div className="pt-2">
+              <div className="flex items-center justify-between pb-3">
+                <h3 className="text-xs font-bold uppercase text-ink tracking-wider flex items-center gap-1.5">
+                  <FileText size={15} className="text-danger" />
                   <span>Full Transaction & Movement Statement:</span>
                 </h3>
-                <span className="text-xs text-gray-500 font-medium">{detailsLedger.length} total entries</span>
+                <span className="text-xs text-ink-muted font-medium">{detailsLedger.length} total entries</span>
               </div>
 
               {detailsLedger.length === 0 ? (
-                <div className="py-12 text-center text-xs text-[#632055] bg-[#FFF9FA] rounded-2xl border border-dashed border-[#FCE7F3]">
-                  No past orders or payments recorded for this customer.
-                </div>
+                <EmptyState icon={FileText} title="No statements" description="No past orders or payments recorded for this customer." />
               ) : (
                 <div className="space-y-2.5">
                   {detailsLedger.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3.5 rounded-2xl border border-[#FCE7F3] bg-white shadow-xs space-y-2"
+                      className="p-3.5 rounded-xl border border-border bg-card shadow-xs space-y-2"
                     >
-                      <div className="flex items-center justify-between border-b border-[#FCE7F3] pb-2 text-xs">
+                      <div className="flex items-center justify-between border-b border-border pb-2 text-xs">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${
-                              item.type === 'ORDER'
-                                ? 'bg-[#FBCFE8] text-[#31102A]'
-                                : 'bg-emerald-100 text-emerald-900'
-                            }`}
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-bold uppercase ${ item.type === 'ORDER' ? 'bg-primary-soft text-ink' : 'bg-success-soft text-success' }`}
                           >
                             {item.type === 'ORDER' ? 'Sales Bill' : 'Khata Payment'}
                           </span>
-                          <span className="font-mono font-extrabold text-[#31102A]">{item.description}</span>
+                          <span className="font-mono font-semibold text-ink">{item.description}</span>
                         </div>
-                        <span className="text-gray-500 font-mono text-[11px]">{item.date}</span>
+                        <span className="text-ink-muted font-mono text-[11px]">{item.date}</span>
                       </div>
 
                       {/* Items details if Order */}
                       {item.type === 'ORDER' && item.items && item.items.length > 0 && (
-                        <div className="text-[11px] text-[#632055] space-y-1 bg-[#FFF9FA] p-2.5 rounded-xl border border-[#FCE7F3]">
-                          <div className="font-bold text-[#31102A] mb-1">Purchased Products:</div>
+                        <div className="text-[11px] text-ink-muted space-y-1 bg-surface p-2.5 rounded-xl border border-border">
+                          <div className="font-bold text-ink mb-1">Purchased Products:</div>
                           {item.items.map((i, idx) => (
                             <div key={idx} className="flex justify-between">
                               <span>• {i.skuName} ({i.quantity} pcs)</span>
@@ -775,25 +771,25 @@ export default function CustomersPage() {
 
                       {/* Payment note if Payment */}
                       {item.type === 'PAYMENT' && (item.referenceNo || item.notes) && (
-                        <div className="text-[11px] text-gray-600 bg-emerald-50/50 p-2 rounded-xl">
+                        <div className="text-[11px] text-ink-muted bg-success-soft/50 p-2 rounded-xl">
                           {item.referenceNo && <div>Ref/Cheque: <strong>{item.referenceNo}</strong></div>}
                           {item.notes && <div>Notes: {item.notes}</div>}
                         </div>
                       )}
 
                       <div className="flex items-center justify-between text-xs pt-1">
-                        <span className="text-gray-500">
+                        <span className="text-ink-muted">
                           Mode: <strong>{item.paymentMethod}</strong>
                         </span>
                         <div>
                           {item.type === 'ORDER' ? (
                             item.creditAddedInr > 0 ? (
-                              <span className="font-black text-red-700">+₹{item.creditAddedInr} (Khata Due)</span>
+                              <span className="font-bold text-danger">+₹{item.creditAddedInr} (Khata Due)</span>
                             ) : (
-                              <span className="font-black text-emerald-800">₹{item.grandTotalInr} (Paid in Full)</span>
+                              <span className="font-bold text-success">₹{item.grandTotalInr} (Paid in Full)</span>
                             )
                           ) : (
-                            <span className="font-black text-emerald-700">-₹{item.amountInr} (Received)</span>
+                            <span className="font-bold text-success">-₹{item.amountInr} (Received)</span>
                           )}
                         </div>
                       </div>
@@ -802,358 +798,261 @@ export default function CustomersPage() {
                 </div>
               )}
             </div>
-
-            {/* Modal Bottom Actions */}
-            <div className="pt-3 border-t border-[#FCE7F3] flex flex-wrap items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setIsPaymentModalOpen(true);
-                  }}
-                  className="jm-btn-primary !text-xs !py-2.5 flex items-center gap-1.5"
-                >
-                  <Plus size={15} />
-                  <span>Record Payment</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleOpenBillForCustomer(activeDetailsCust);
-                    setIsDetailsModalOpen(false);
-                  }}
-                  className="jm-btn-secondary !text-xs !py-2.5 flex items-center gap-1.5"
-                >
-                  <ShoppingBag size={15} />
-                  <span>Create Bill</span>
-                </button>
-              </div>
-
-              {activeDetailsCust.totalOutstandingInr > 0 && (
-                <a
-                  href={generateKhataWhatsApp(activeDetailsCust)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="jm-btn-secondary !text-xs !py-2.5 flex items-center gap-1.5 text-emerald-800 border-emerald-300 hover:bg-emerald-50"
-                >
-                  <Share2 size={15} />
-                  <span>WhatsApp Reminder</span>
-                </a>
-              )}
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
-      {/* Edit Customer Modal (Name, Phone, Address, GSTIN, Type) */}
-      {isEditModalOpen && editingCustomer && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border-2 border-[#FCE7F3] shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between border-b border-[#FCE7F3] pb-2">
-              <div>
-                <h3 className="font-black text-base sm:text-lg text-[#31102A]">Edit Customer Details</h3>
-                <p className="text-xs text-[#632055]">Update name, phone number, address & category</p>
-              </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-black font-bold">
-                ✕
+      {/* Edit Customer Modal */}
+      <Modal
+        id="edit-customer"
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Customer Details"
+        description="Update name, phone number, address & category"
+      >
+        {editingCustomer && (
+          <form onSubmit={handleSaveCustomerEdit} className="space-y-3.5 pt-2">
+            <div>
+              <label htmlFor="editName" className="block text-xs font-bold text-ink mb-1">Customer / Business Name *</label>
+              <input id="editName" type="text" required value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="e.g. Ramesh Kumar / Shyam Kirana"
+                className="jm-input"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="editPhone" className="block text-xs font-bold text-ink mb-1">Mobile Number (10 digits) *</label>
+              <input id="editPhone" type="tel" required value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="9829012345"
+                className="jm-input !font-mono"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="editType" className="block text-xs font-bold text-ink mb-1">Customer Category</label>
+              <select id="editType" value={editType}
+                onChange={(e) => setEditType(e.target.value as 'retail' | 'wholesale')}
+                className="jm-select"
+              >
+                <option value="retail">Retail Customer</option>
+                <option value="wholesale">Wholesale Dealer</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="editArea" className="block text-xs font-bold text-ink mb-1">Area / Address / Location</label>
+              <input id="editArea" type="text" value={editArea}
+                onChange={(e) => setEditArea(e.target.value)}
+                placeholder="e.g. Fatehpur Mandi / Sikar Road"
+                className="jm-input"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="editGstin" className="block text-xs font-bold text-ink mb-1">GSTIN (Optional)</label>
+              <input id="editGstin" type="text" value={editGstin}
+                onChange={(e) => setEditGstin(e.target.value.toUpperCase())}
+                placeholder="e.g. 08AABFJ1234F1Z5"
+                className="jm-input !font-mono"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="editLimit" className="block text-xs font-bold text-ink mb-1">Credit Limit (₹)</label>
+              <input id="editLimit" type="number" value={editLimit}
+                onChange={(e) => setEditLimit(e.target.value)}
+                className="jm-input"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="jm-btn-secondary flex-1 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="jm-btn-primary flex-1 cursor-pointer shadow-md">
+                Save Changes
               </button>
             </div>
-
-            <form onSubmit={handleSaveCustomerEdit} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Customer / Business Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="e.g. Ramesh Kumar / Shyam Kirana"
-                  className="jm-input !text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Mobile Number (10 digits) *</label>
-                <input
-                  type="tel"
-                  required
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder="9829012345"
-                  className="jm-input !text-xs !font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Customer Category</label>
-                <select
-                  value={editType}
-                  onChange={(e) => setEditType(e.target.value as CustomerType)}
-                  className="jm-select !text-xs"
-                >
-                  <option value="retail">Retail Customer</option>
-                  <option value="wholesale">Wholesale Dealer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Area / Address / Location</label>
-                <input
-                  type="text"
-                  value={editArea}
-                  onChange={(e) => setEditArea(e.target.value)}
-                  placeholder="e.g. Fatehpur Mandi / Sikar Road"
-                  className="jm-input !text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">GSTIN (Optional)</label>
-                <input
-                  type="text"
-                  value={editGstin}
-                  onChange={(e) => setEditGstin(e.target.value.toUpperCase())}
-                  placeholder="e.g. 08AABFJ1234F1Z5"
-                  className="jm-input !text-xs !font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Credit Limit (₹)</label>
-                <input
-                  type="number"
-                  value={editLimit}
-                  onChange={(e) => setEditLimit(e.target.value)}
-                  className="jm-input !text-xs !font-bold"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="jm-btn-secondary flex-1 cursor-pointer"
-                >
-                  {t('cancel')}
-                </button>
-                <button type="submit" className="jm-btn-primary flex-1 !font-black cursor-pointer shadow-md">
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          </form>
+        )}
+      </Modal>
 
       {/* Add Customer Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 border-2 border-[#FCE7F3] shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 border-b border-[#FCE7F3] pb-2">
-              <h3 className="font-black text-base sm:text-lg text-[#31102A]">Add New Customer</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-black font-bold">
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleAddCustomer} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Customer / Business Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={newCustName}
-                  onChange={(e) => setNewCustName(e.target.value)}
-                  placeholder="e.g. Ramesh Kumar / Shyam Kirana"
-                  className="jm-input !text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Mobile Number (10 digits) *</label>
-                <input
-                  type="tel"
-                  required
-                  value={newCustPhone}
-                  onChange={(e) => setNewCustPhone(e.target.value)}
-                  placeholder="9829012345"
-                  className="jm-input !text-xs !font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Customer Category</label>
-                <select
-                  value={newCustType}
-                  onChange={(e) => setNewCustType(e.target.value as CustomerType)}
-                  className="jm-select !text-xs"
-                >
-                  <option value="retail">Retail Customer</option>
-                  <option value="wholesale">Wholesale Dealer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Area / Market Location</label>
-                <input
-                  type="text"
-                  value={newCustArea}
-                  onChange={(e) => setNewCustArea(e.target.value)}
-                  placeholder="e.g. Fatehpur Mandi / Sikar"
-                  className="jm-input !text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Credit Limit (₹)</label>
-                <input
-                  type="number"
-                  value={newCustLimit}
-                  onChange={(e) => setNewCustLimit(e.target.value)}
-                  className="jm-input !text-xs !font-bold"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="jm-btn-secondary flex-1"
-                >
-                  {t('cancel')}
-                </button>
-                <button type="submit" className="jm-btn-primary flex-1 !font-black">
-                  {t('save')}
-                </button>
-              </div>
-            </form>
+      <Modal
+        id="add-customer"
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add New Customer"
+      >
+        <form onSubmit={handleAddCustomer} className="space-y-3.5 pt-2">
+          <div>
+            <label htmlFor="newCustName" className="block text-xs font-bold text-ink mb-1">Customer / Business Name *</label>
+            <input id="newCustName" type="text" required value={newCustName}
+              onChange={(e) => setNewCustName(e.target.value)}
+              placeholder="e.g. Ramesh Kumar / Shyam Kirana"
+              className="jm-input"
+            />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label htmlFor="newCustPhone" className="block text-xs font-bold text-ink mb-1">Mobile Number (10 digits) *</label>
+            <input id="newCustPhone" type="tel" required value={newCustPhone}
+              onChange={(e) => setNewCustPhone(e.target.value)}
+              placeholder="9829012345"
+              className="jm-input !font-mono"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="newCustType" className="block text-xs font-bold text-ink mb-1">Customer Category</label>
+            <select id="newCustType" value={newCustType}
+              onChange={(e) => setNewCustType(e.target.value as 'retail' | 'wholesale')}
+              className="jm-select"
+            >
+              <option value="retail">Retail Customer</option>
+              <option value="wholesale">Wholesale Dealer</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="newCustArea" className="block text-xs font-bold text-ink mb-1">Area / Market Location</label>
+            <input id="newCustArea" type="text" value={newCustArea}
+              onChange={(e) => setNewCustArea(e.target.value)}
+              placeholder="e.g. Fatehpur Mandi / Sikar"
+              className="jm-input"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="newCustLimit" className="block text-xs font-bold text-ink mb-1">Credit Limit (₹)</label>
+            <input id="newCustLimit" type="number" value={newCustLimit}
+              onChange={(e) => setNewCustLimit(e.target.value)}
+              className="jm-input"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="jm-btn-secondary flex-1 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="jm-btn-primary flex-1 cursor-pointer shadow-md">
+              Save Customer
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Record Payment (Jama) Modal */}
-      {isPaymentModalOpen && (activeDetailsCust || selectedCustomer) && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 border-2 border-[#FCE7F3] shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 border-b border-[#FCE7F3] pb-2">
-              <div>
-                <h3 className="font-black text-base sm:text-lg text-[#31102A]">Record Khata Payment</h3>
-                <p className="text-xs text-[#632055]">{(activeDetailsCust || selectedCustomer)?.name}</p>
-              </div>
-              <button onClick={() => setIsPaymentModalOpen(false)} className="text-gray-400 hover:text-black font-bold">
-                ✕
-              </button>
-            </div>
+      <Modal
+        id="record-payment"
+        open={isPaymentModalOpen && Boolean(activeDetailsCust || selectedCustomer)}
+        onClose={() => setIsPaymentModalOpen(false)}
+        title="Record Khata Payment"
+        description={(activeDetailsCust || selectedCustomer)?.name || ''}
+      >
+        <form onSubmit={handleRecordPayment} className="space-y-4 pt-2">
+          <div className="p-3 rounded-xl bg-danger-soft border border-danger-soft text-xs text-danger flex justify-between items-center">
+            <span>Current Outstanding Due:</span>
+            <span className="font-bold text-sm">
+              ₹{((activeDetailsCust || selectedCustomer)?.totalOutstandingInr || 0).toLocaleString('en-IN')}
+            </span>
+          </div>
 
-            <form onSubmit={handleRecordPayment} className="space-y-4">
-              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 flex justify-between items-center">
-                <span>Current Outstanding Due:</span>
-                <span className="font-black text-sm">
-                  ₹{((activeDetailsCust || selectedCustomer)?.totalOutstandingInr || 0).toLocaleString('en-IN')}
-                </span>
-              </div>
+          <div>
+            <label htmlFor="paymentAmount" className="block text-xs font-bold text-ink mb-1">Received Amount (₹) *</label>
+            <input id="paymentAmount" type="number" required autoFocus value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+              placeholder="e.g. 5000"
+              className="jm-input text-success"
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Received Amount (₹) *</label>
-                <input
-                  type="number"
-                  required
-                  autoFocus
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder="e.g. 5000"
-                  className="jm-input !text-lg !font-black text-[#047857]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Payment Mode</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Cash', 'UPI', 'Card'] as PaymentMethod[]).map((m) => (
-                    <button
-                      type="button"
-                      key={m}
-                      onClick={() => setPaymentMode(m)}
-                      className={`py-2 rounded-xl text-xs font-bold border cursor-pointer ${
-                        paymentMode === m ? 'bg-[#31102A] text-white' : 'bg-white text-[#632055] border-[#FCE7F3]'
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">UPI Reference / Cheque No.</label>
-                <input
-                  type="text"
-                  value={paymentRef}
-                  onChange={(e) => setPaymentRef(e.target.value)}
-                  placeholder="e.g. UPI/12345678"
-                  className="jm-input !text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#31102A] mb-1">Notes (Optional)</label>
-                <input
-                  type="text"
-                  value={paymentNotes}
-                  onChange={(e) => setPaymentNotes(e.target.value)}
-                  placeholder="e.g. Part payment settled at counter"
-                  className="jm-input !text-xs"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
+          <div>
+            <label className="block text-xs font-bold text-ink mb-1">Payment Mode</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['Cash', 'UPI', 'Card'] as PaymentMethod[]).map((m) => (
                 <button
                   type="button"
-                  onClick={() => setIsPaymentModalOpen(false)}
-                  className="jm-btn-secondary flex-1"
+                  key={m}
+                  aria-pressed={paymentMode === m}
+                  onClick={() => setPaymentMode(m)}
+                  className={`py-2 rounded-xl text-xs font-bold border cursor-pointer ${ paymentMode === m ? 'bg-ink text-white' : 'bg-card text-ink-muted border-border' }`}
                 >
-                  {t('cancel')}
+                  {m}
                 </button>
-                <button type="submit" className="jm-btn-primary flex-1 !font-black bg-emerald-600 hover:bg-emerald-700 text-white !border-emerald-700">
-                  Confirm Payment
-                </button>
-              </div>
-            </form>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+
+          <div>
+            <label htmlFor="paymentRef" className="block text-xs font-bold text-ink mb-1">UPI Reference / Cheque No.</label>
+            <input id="paymentRef" type="text" value={paymentRef}
+              onChange={(e) => setPaymentRef(e.target.value)}
+              placeholder="e.g. UPI/12345678"
+              className="jm-input"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="paymentNotes" className="block text-xs font-bold text-ink mb-1">Notes (Optional)</label>
+            <input id="paymentNotes" type="text" value={paymentNotes}
+              onChange={(e) => setPaymentNotes(e.target.value)}
+              placeholder="e.g. Part payment settled at counter"
+              className="jm-input"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsPaymentModalOpen(false)}
+              className="jm-btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="jm-btn-primary flex-1 bg-success hover:bg-success/90 text-white">
+              Confirm Payment
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Import Contacts Modal */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 border-2 border-[#FCE7F3] shadow-2xl">
-            <div className="flex items-center justify-between mb-4 border-b border-[#FCE7F3] pb-2">
-              <h3 className="font-black text-base sm:text-lg text-[#31102A]">Import Contacts (VCF / CSV)</h3>
-              <button onClick={() => setIsImportModalOpen(false)} className="text-gray-400 hover:text-black font-bold">
-                ✕
-              </button>
-            </div>
+      <Modal
+        id="import-contacts"
+        open={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Import Contacts (VCF / CSV)"
+      >
+        <div className="space-y-4 text-xs pt-2">
+          <p className="text-ink-muted">
+            Upload your phone contacts VCF file (e.g. Contacts.vcf) or CSV file. The system will automatically parse and deduplicate contacts.
+          </p>
 
-            <div className="space-y-4 text-xs">
-              <p className="text-[#632055]">
-                Upload your phone contacts VCF file (e.g. Contacts.vcf) or CSV file. The system will automatically parse and deduplicate contacts.
-              </p>
-
-              <div className="p-6 rounded-2xl border-2 border-dashed border-[#E5B6D3] bg-[#FFF9FA] text-center">
-                <UploadCloud size={32} className="mx-auto mb-2 text-[#9F1239]" />
-                <label className="jm-btn-primary !cursor-pointer">
-                  <span>Choose .vcf / .csv File</span>
-                  <input
-                    type="file"
-                    accept=".vcf,.csv,text/vcard"
-                    onChange={handleVCFUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
+          <div className="p-6 rounded-xl border-2 border-dashed border-border bg-surface text-center">
+            <UploadCloud size={32} className="mx-auto mb-2 text-danger" />
+            <label className="jm-btn-primary !cursor-pointer">
+              <span>Choose .vcf / .csv File</span>
+              <input
+                type="file"
+                accept=".vcf,.csv,text/vcard"
+                onChange={handleVCFUpload}
+                className="hidden"
+              />
+            </label>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

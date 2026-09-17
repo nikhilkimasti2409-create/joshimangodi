@@ -31,6 +31,11 @@ import { round2, calculateTaxBreakdown } from '../lib/domain';
 import { showToast } from '../components/common/Toast';
 import type { ProductSKU } from '../types';
 
+import Modal from '../components/common/Modal';
+import EmptyState from '../components/common/EmptyState';
+import StatusBadge from '../components/common/StatusBadge';
+import PageHeader from '../components/common/PageHeader';
+
 // Built-in asset gallery images
 const BUILTIN_ASSET_IMAGES = [
   { label: 'Sadi Plain Mangodi (Bowl)', url: '/assets/sadi mangodi.jpeg' },
@@ -597,17 +602,17 @@ export default function ProductsPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6">
       {/* Top Banner & Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-white via-[#FFF9FA] to-[#FEFCE8] p-6 rounded-3xl border border-[#FCE7F3] shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-white via-surface to-warning-soft p-6 rounded-xl border border-border shadow-xs">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#FBCFE8] border border-[#E5B6D3] flex items-center justify-center text-[#9F1239]">
+            <div className="w-10 h-10 rounded-xl bg-primary-soft border border-border flex items-center justify-center text-primary">
               <Tag size={22} strokeWidth={2.3} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-serif-brand font-black text-[#31102A]">
+              <h1 className="text-2xl sm:text-3xl font-bold font-black text-ink">
                 Product Catalog & Upload
               </h1>
-              <p className="text-xs sm:text-sm text-[#632055] font-medium mt-0.5">
+              <p className="text-xs sm:text-sm text-ink-muted font-medium mt-0.5">
                 Add, manage, and bulk upload Moong Dal Mangodi SKUs with automated 4-tier pricing
               </p>
             </div>
@@ -618,7 +623,7 @@ export default function ProductsPage() {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#9F1239] text-white font-extrabold text-xs sm:text-sm shadow-md hover:bg-[#881337] active:scale-95 transition cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-extrabold text-xs sm:text-sm shadow-md hover:bg-primary-hover active:scale-95 transition cursor-pointer"
           >
             <Plus size={18} strokeWidth={2.5} />
             <span>Add New Product</span>
@@ -626,7 +631,7 @@ export default function ProductsPage() {
 
           <button
             onClick={() => setIsCsvModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white border border-[#FCE7F3] text-[#31102A] font-bold text-xs hover:bg-[#FEFCE8] active:scale-95 transition cursor-pointer shadow-xs"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-card border border-border text-ink font-bold text-xs hover:bg-warning-soft active:scale-95 transition cursor-pointer shadow-xs"
           >
             <Upload size={16} />
             <span>Bulk CSV Upload</span>
@@ -634,7 +639,7 @@ export default function ProductsPage() {
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white border border-[#FCE7F3] text-[#632055] font-bold text-xs hover:bg-[#FEFCE8] active:scale-95 transition cursor-pointer shadow-xs"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-card border border-border text-ink-muted font-bold text-xs hover:bg-warning-soft active:scale-95 transition cursor-pointer shadow-xs"
             title="Export products to CSV"
           >
             <Download size={16} />
@@ -648,7 +653,7 @@ export default function ProductsPage() {
                   store.loadSampleProducts();
                 }
               }}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-[#FEF08A] border border-[#FDE047] text-[#31102A] font-extrabold text-xs hover:bg-[#FDE047] active:scale-95 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-warning-soft border border-warning-soft text-ink font-extrabold text-xs hover:bg-warning-soft active:scale-95 transition cursor-pointer"
             >
               <Sparkles size={15} />
               <span>Load Demo SKUs</span>
@@ -656,7 +661,7 @@ export default function ProductsPage() {
           ) : (
             <button
               onClick={handleClearAll}
-              className="flex items-center gap-1 px-3 py-2.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 font-bold text-xs hover:bg-red-100 transition cursor-pointer"
+              className="flex items-center gap-1 px-3 py-2.5 rounded-xl bg-danger-soft border border-danger/20 text-danger font-bold text-xs hover:bg-danger-soft/80 transition cursor-pointer"
               title="Delete all products"
             >
               <Trash2 size={15} />
@@ -668,65 +673,65 @@ export default function ProductsPage() {
 
       {/* KPI Metrics Strip (Airy & Open) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-white border border-[#FCE7F3]">
+        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-card border border-border">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-[#632055]">Total Catalog SKUs</div>
-            <div className="text-2xl sm:text-3xl font-serif-brand font-black text-[#31102A] mt-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Total Catalog SKUs</div>
+            <div className="text-2xl sm:text-3xl font-bold font-black text-ink mt-1">
               {products.length}
             </div>
-            <div className="text-[11px] text-gray-500 mt-0.5">Active Products</div>
+            <div className="text-[11px] text-ink-muted mt-0.5">Active Products</div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3] flex items-center justify-center text-[#9F1239]">
+          <div className="w-12 h-12 rounded-xl bg-surface border border-border flex items-center justify-center text-primary">
             <Package size={24} />
           </div>
         </div>
 
-        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-white border border-[#FCE7F3]">
+        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-card border border-border">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-[#632055]">Total Inventory</div>
-            <div className="text-2xl sm:text-3xl font-serif-brand font-black text-[#31102A] mt-1">
-              {totalStockUnits.toLocaleString('en-IN')} <span className="text-sm font-sans font-bold text-gray-500">pkts</span>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Total Inventory</div>
+            <div className="text-2xl sm:text-3xl font-bold font-black text-ink mt-1">
+              {totalStockUnits.toLocaleString('en-IN')} <span className="text-sm font-sans font-bold text-ink-muted">pkts</span>
             </div>
-            <div className="text-[11px] text-emerald-700 font-bold mt-0.5">
+            <div className="text-[11px] text-success font-bold mt-0.5">
               ~{totalStockKg.toFixed(1)} kg total weight
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+          <div className="w-12 h-12 rounded-xl bg-success-soft border border-border flex items-center justify-center text-success">
             <Layers size={24} />
           </div>
         </div>
 
-        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-white border border-[#FCE7F3]">
+        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-card border border-border">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-[#632055]">Stock Asset Value</div>
-            <div className="text-2xl sm:text-3xl font-serif-brand font-black text-[#9F1239] mt-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Stock Asset Value</div>
+            <div className="text-2xl sm:text-3xl font-bold font-black text-primary mt-1">
               ₹{totalValuationRetail.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </div>
-            <div className="text-[11px] text-gray-500 mt-0.5">
+            <div className="text-[11px] text-ink-muted mt-0.5">
               Cost: ₹{totalValuationCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3] flex items-center justify-center text-[#9F1239]">
+          <div className="w-12 h-12 rounded-xl bg-surface border border-border flex items-center justify-center text-primary">
             <BadgeIndianRupee size={24} />
           </div>
         </div>
 
-        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-white border border-[#FCE7F3]">
+        <div className="jm-card p-4 sm:p-5 flex items-center justify-between bg-card border border-border">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-[#632055]">Stock Health</div>
-            <div className="text-2xl sm:text-3xl font-serif-brand font-black text-[#31102A] mt-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Stock Health</div>
+            <div className="text-2xl sm:text-3xl font-bold font-black text-ink mt-1">
               {lowStockCount > 0 ? (
-                <span className="text-amber-700">{lowStockCount} Low</span>
+                <span className="text-warning">{lowStockCount} Low</span>
               ) : (
-                <span className="text-emerald-700">Healthy</span>
+                <span className="text-success">Healthy</span>
               )}
             </div>
-            <div className="text-[11px] text-gray-500 mt-0.5">
+            <div className="text-[11px] text-ink-muted mt-0.5">
               {lowStockCount > 0 ? 'Need production replenishment' : 'All SKUs above ROP'}
             </div>
           </div>
-          <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${
-            lowStockCount > 0 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+          <div className={`w-12 h-12 rounded-xl border flex items-center justify-center ${
+            lowStockCount > 0 ? 'bg-warning-soft border-border text-warning' : 'bg-success-soft border-border text-success'
           }`}>
             {lowStockCount > 0 ? <AlertTriangle size={24} /> : <CheckCircle2 size={24} />}
           </div>
@@ -734,22 +739,23 @@ export default function ProductsPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#FCE7F3] shadow-xs space-y-4">
+      <div className="bg-card p-4 sm:p-5 rounded-xl border border-border shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              id="product-search"
               placeholder="Search by Product Name, Barcode (EAN), Shape, HSN Code..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm text-[#31102A] font-medium focus:bg-white focus:outline-hidden focus:border-[#9F1239] transition"
+              className="jm-input pl-10"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer text-xs font-bold"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-muted cursor-pointer text-xs font-bold"
               >
                 Clear
               </button>
@@ -758,11 +764,11 @@ export default function ProductsPage() {
 
           {/* View Toggle */}
           <div className="flex items-center gap-2 self-end md:self-auto">
-            <div className="flex items-center bg-[#FFF9FA] border border-[#FCE7F3] rounded-2xl p-1">
+            <div className="flex items-center bg-surface border border-border rounded-xl p-1">
               <button
                 onClick={() => setViewMode('GRID')}
                 className={`p-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  viewMode === 'GRID' ? 'bg-white text-[#31102A] shadow-xs' : 'text-gray-500 hover:text-gray-900'
+                  viewMode === 'GRID' ? 'bg-card text-ink shadow-xs' : 'text-ink-muted hover:text-ink'
                 }`}
                 title="Grid Card View"
               >
@@ -771,7 +777,7 @@ export default function ProductsPage() {
               <button
                 onClick={() => setViewMode('TABLE')}
                 className={`p-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  viewMode === 'TABLE' ? 'bg-white text-[#31102A] shadow-xs' : 'text-gray-500 hover:text-gray-900'
+                  viewMode === 'TABLE' ? 'bg-card text-ink shadow-xs' : 'text-ink-muted hover:text-ink'
                 }`}
                 title="Operations Table View"
               >
@@ -782,8 +788,8 @@ export default function ProductsPage() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 text-xs">
-          <span className="font-extrabold text-[#632055] mr-1">Categories:</span>
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border text-xs">
+          <span className="font-extrabold text-ink-muted mr-1">Categories:</span>
           {[
             { id: 'ALL', label: 'All Categories' },
             { id: 'PLAIN_MANGODI', label: 'Sadi Plain Mangodi' },
@@ -796,23 +802,23 @@ export default function ProductsPage() {
               onClick={() => setCategoryFilter(cat.id)}
               className={`px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
                 categoryFilter === cat.id
-                  ? 'bg-[#31102A] text-white shadow-xs'
-                  : 'bg-[#FFF9FA] text-[#632055] border border-[#FCE7F3] hover:bg-[#FEFCE8]'
+                  ? 'bg-ink text-white shadow-xs'
+                  : 'bg-surface text-ink-muted border border-border hover:bg-warning-soft'
               }`}
             >
               {cat.label}
             </button>
           ))}
 
-          <span className="font-extrabold text-[#632055] ml-3 mr-1">Shape:</span>
+          <span className="font-extrabold text-ink-muted ml-3 mr-1">Shape:</span>
           {['ALL', 'LAMBI', 'GOL', 'MASALA', 'SPECIAL'].map((sh) => (
             <button
               key={sh}
               onClick={() => setShapeFilter(sh)}
               className={`px-2.5 py-1.5 rounded-xl font-bold transition cursor-pointer ${
                 shapeFilter === sh
-                  ? 'bg-[#9F1239] text-white shadow-xs'
-                  : 'bg-[#FFF9FA] text-[#632055] border border-[#FCE7F3] hover:bg-[#FEFCE8]'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'bg-surface text-ink-muted border border-border hover:bg-warning-soft'
               }`}
             >
               {sh}
@@ -824,16 +830,16 @@ export default function ProductsPage() {
       {/* Main Catalog Area */}
       {products.length === 0 ? (
         /* Empty State (When user has deleted all products and is ready to upload) */
-        <div className="bg-white border-2 border-dashed border-[#FBCFE8] rounded-3xl p-10 sm:p-16 text-center space-y-5">
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-[#FFF9FA] to-[#FEFCE8] border border-[#FCE7F3] flex items-center justify-center text-[#9F1239] shadow-inner">
+        <div className="bg-card border-2 border-dashed border-primary-soft rounded-xl p-10 sm:p-16 text-center space-y-5">
+          <div className="w-20 h-20 mx-auto rounded-xl bg-gradient-to-br from-surface to-warning-soft border border-border flex items-center justify-center text-primary shadow-inner">
             <Package size={38} strokeWidth={1.8} />
           </div>
 
           <div className="max-w-md mx-auto">
-            <h2 className="text-2xl font-serif-brand font-black text-[#31102A]">
+            <h2 className="text-2xl font-bold font-black text-ink">
               Your Product Catalog is Empty
             </h2>
-            <p className="text-sm text-[#632055] mt-2 leading-relaxed">
+            <p className="text-sm text-ink-muted mt-2 leading-relaxed">
               All initial sample products have been cleared. You can now manually add your custom Mangodi SKUs by hand or upload a batch CSV spreadsheet.
             </p>
           </div>
@@ -841,7 +847,7 @@ export default function ProductsPage() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
             <button
               onClick={handleOpenAdd}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#9F1239] text-white font-extrabold text-sm shadow-md hover:bg-[#881337] active:scale-95 transition cursor-pointer"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-extrabold text-sm shadow-md hover:bg-primary-hover active:scale-95 transition cursor-pointer"
             >
               <Plus size={18} strokeWidth={2.5} />
               <span>Add Your First Product Manually</span>
@@ -849,7 +855,7 @@ export default function ProductsPage() {
 
             <button
               onClick={() => setIsCsvModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-[#FCE7F3] text-[#31102A] font-bold text-sm hover:bg-[#FEFCE8] active:scale-95 transition cursor-pointer"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-card border border-border text-ink font-bold text-sm hover:bg-warning-soft active:scale-95 transition cursor-pointer"
             >
               <Upload size={18} />
               <span>Import via CSV Spreadsheet</span>
@@ -857,7 +863,7 @@ export default function ProductsPage() {
 
             <button
               onClick={handleDownloadTemplate}
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3] text-[#632055] font-bold text-sm hover:bg-[#FEFCE8] transition cursor-pointer"
+              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-surface border border-border text-ink-muted font-bold text-sm hover:bg-warning-soft transition cursor-pointer"
             >
               <Download size={16} />
               <span>Download CSV Template</span>
@@ -869,7 +875,7 @@ export default function ProductsPage() {
                   store.loadSampleProducts();
                 }
               }}
-              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-[#FEF08A] border border-[#FDE047] text-[#31102A] font-extrabold text-xs hover:bg-[#FDE047] transition cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-3 rounded-xl bg-warning-soft border border-warning-soft text-ink font-extrabold text-xs hover:bg-warning-soft transition cursor-pointer"
             >
               <Sparkles size={15} />
               <span>Load Preset Demo Products</span>
@@ -878,10 +884,10 @@ export default function ProductsPage() {
         </div>
       ) : filteredProducts.length === 0 ? (
         /* Filter Empty State */
-        <div className="jm-card p-12 text-center bg-white border border-[#FCE7F3] text-[#632055]">
+        <div className="jm-card p-12 text-center bg-card border border-border text-ink-muted">
           <Search size={42} className="mx-auto mb-2 opacity-30" />
-          <h3 className="text-lg font-bold text-[#31102A]">No products match the selected filters</h3>
-          <p className="text-xs text-gray-500 mt-1">Try clearing your search query or selecting "All Categories".</p>
+          <h3 className="text-lg font-bold text-ink">No products match the selected filters</h3>
+          <p className="text-xs text-ink-muted mt-1">Try clearing your search query or selecting "All Categories".</p>
           <button
             onClick={() => {
               setSearch('');
@@ -889,7 +895,7 @@ export default function ProductsPage() {
               setShapeFilter('ALL');
               setStockFilter('ALL');
             }}
-            className="mt-4 px-4 py-2 rounded-xl bg-[#FFF9FA] border border-[#FCE7F3] text-xs font-bold hover:bg-[#FEFCE8] cursor-pointer"
+            className="mt-4 px-4 py-2 rounded-xl bg-surface border border-border text-xs font-bold hover:bg-warning-soft cursor-pointer"
           >
             Reset Filters
           </button>
@@ -906,21 +912,21 @@ export default function ProductsPage() {
             return (
               <div
                 key={prod.id}
-                className="jm-card bg-white border border-[#FCE7F3] p-4 flex flex-col justify-between hover:shadow-lg transition-all duration-200 group rounded-3xl"
+                className="jm-card bg-card border border-border p-4 flex flex-col justify-between hover:shadow-lg transition-all duration-200 group rounded-xl"
               >
                 <div>
                   {/* Top Badges */}
                   <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                    <span className="text-[10px] uppercase font-black text-[#632055] tracking-wider bg-[#FFF9FA] border border-[#FCE7F3] px-2.5 py-0.5 rounded-lg">
+                    <span className="text-[10px] uppercase font-black text-ink-muted tracking-wider bg-surface border border-border px-2.5 py-0.5 rounded-lg">
                       {prod.shape} · {prod.packetSizeGrams >= 1000 ? `${prod.packetSizeGrams / 1000}kg` : `${prod.packetSizeGrams}g`}
                     </span>
                     <span
                       className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
                         isOutOfStock
-                          ? 'bg-red-100 text-red-800 border border-red-200'
+                          ? 'bg-danger-soft text-danger border border-danger/20'
                           : isLowStock
-                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                          : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          ? 'bg-warning-soft text-warning border border-warning/20'
+                          : 'bg-success-soft text-success border border-success/20'
                       }`}
                     >
                       {isOutOfStock ? 'Out of Stock' : `${prod.currentStockUnits} pkts`}
@@ -928,7 +934,7 @@ export default function ProductsPage() {
                   </div>
 
                   {/* Product Photo Box */}
-                  <div className="relative h-40 w-full rounded-2xl bg-gradient-to-b from-[#FFF9FA] to-[#FEFCE8] flex items-center justify-center p-3 mb-3 overflow-hidden border border-[#FCE7F3]/60 group-hover:border-[#FBCFE8] transition">
+                  <div className="relative h-40 w-full rounded-xl bg-gradient-to-b from-surface to-warning-soft flex items-center justify-center p-3 mb-3 overflow-hidden border border-border/60 group-hover:border-primary-soft transition">
                     <img
                       src={prod.image || '/assets/sadi mangodi.jpeg'}
                       alt={prod.name}
@@ -937,63 +943,63 @@ export default function ProductsPage() {
                         (e.target as HTMLImageElement).src = '/assets/brand logo.png';
                       }}
                     />
-                    <span className="absolute bottom-2 left-2 text-[9px] font-mono font-bold bg-white/90 backdrop-blur-xs text-gray-600 px-2 py-0.5 rounded-md border border-gray-200 shadow-2xs">
+                    <span className="absolute bottom-2 left-2 text-[9px] font-mono font-bold bg-card/90 backdrop-blur-xs text-ink-muted px-2 py-0.5 rounded-md border border-border shadow-2xs">
                       {prod.barcode}
                     </span>
-                    <span className="absolute top-2 right-2 text-[9px] font-bold bg-[#31102A] text-white px-2 py-0.5 rounded-md">
+                    <span className="absolute top-2 right-2 text-[9px] font-bold bg-ink text-white px-2 py-0.5 rounded-md">
                       GST {prod.gstRate}%
                     </span>
                   </div>
 
                   {/* Name & Details */}
                   <div>
-                    <h3 className="font-extrabold text-sm text-[#31102A] leading-snug line-clamp-2">
+                    <h3 className="font-extrabold text-sm text-ink leading-snug line-clamp-2">
                       {prod.name}
                     </h3>
                     {prod.nameHindi && prod.nameHindi !== prod.name && (
-                      <p className="text-[11px] text-[#632055] font-medium mt-0.5 line-clamp-1">
+                      <p className="text-[11px] text-ink-muted font-medium mt-0.5 line-clamp-1">
                         {prod.nameHindi}
                       </p>
                     )}
                   </div>
 
                   {/* 4-Tier Pricing Block */}
-                  <div className="mt-3.5 p-3 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3] space-y-1.5 text-xs">
+                  <div className="mt-3.5 p-3 rounded-xl bg-surface border border-border space-y-1.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500 font-medium">Retail Price:</span>
+                      <span className="text-ink-muted font-medium">Retail Price:</span>
                       <div className="text-right">
-                        <span className="font-black text-[#31102A] text-sm">₹{prod.retailPriceInr}</span>
+                        <span className="font-black text-ink text-sm">₹{prod.retailPriceInr}</span>
                         {prod.mrpInr > prod.retailPriceInr && (
-                          <span className="text-[10px] text-gray-400 line-through ml-1.5 font-mono">
+                          <span className="text-[10px] text-ink-muted line-through ml-1.5 font-mono">
                             ₹{prod.mrpInr}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-pink-100">
-                      <span className="text-[#632055] font-bold">WS Tier 1 (Bulk):</span>
-                      <span className="font-extrabold text-[#31102A]">₹{prod.wholesaleT1PriceInr}</span>
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border">
+                      <span className="text-ink-muted font-bold">WS Tier 1 (Bulk):</span>
+                      <span className="font-extrabold text-ink">₹{prod.wholesaleT1PriceInr}</span>
                     </div>
 
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#632055] font-bold">WS Tier 2 (Dist.):</span>
-                      <span className="font-extrabold text-[#31102A]">₹{prod.wholesaleT2PriceInr}</span>
+                      <span className="text-ink-muted font-bold">WS Tier 2 (Dist.):</span>
+                      <span className="font-extrabold text-ink">₹{prod.wholesaleT2PriceInr}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] pt-1 border-t border-pink-100 text-gray-500">
+                    <div className="flex items-center justify-between text-[10px] pt-1 border-t border-border text-ink-muted">
                       <span>COGS Unit Cost:</span>
-                      <span className="font-mono font-bold text-gray-700">₹{prod.unitCostInr} ({retailMargin}% margin)</span>
+                      <span className="font-mono font-bold text-ink-muted">₹{prod.unitCostInr} ({retailMargin}% margin)</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Bottom Actions Bar */}
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleOpenEdit(prod)}
-                      className="p-2 rounded-xl bg-[#FFF9FA] border border-[#FCE7F3] text-[#31102A] hover:bg-[#FEFCE8] active:scale-95 transition cursor-pointer"
+                      className="p-2 rounded-xl bg-surface border border-border text-ink hover:bg-warning-soft active:scale-95 transition cursor-pointer"
                       title="Edit SKU"
                     >
                       <Edit size={14} />
@@ -1001,7 +1007,7 @@ export default function ProductsPage() {
 
                     <button
                       onClick={() => handleDuplicate(prod)}
-                      className="p-2 rounded-xl bg-[#FFF9FA] border border-[#FCE7F3] text-[#632055] hover:bg-[#FEFCE8] active:scale-95 transition cursor-pointer"
+                      className="p-2 rounded-xl bg-surface border border-border text-ink-muted hover:bg-warning-soft active:scale-95 transition cursor-pointer"
                       title="Duplicate SKU (Create Variant)"
                     >
                       <Copy size={14} />
@@ -1009,7 +1015,7 @@ export default function ProductsPage() {
 
                     <button
                       onClick={() => handleDeleteProduct(prod)}
-                      className="p-2 rounded-xl bg-red-50 border border-red-100 text-red-600 hover:bg-red-100 active:scale-95 transition cursor-pointer"
+                      className="p-2 rounded-xl bg-danger-soft border border-danger-soft text-danger hover:bg-danger-soft active:scale-95 transition cursor-pointer"
                       title="Delete SKU"
                     >
                       <Trash2 size={14} />
@@ -1021,7 +1027,7 @@ export default function ProductsPage() {
                       store.addToCart(prod, 1);
                       showToast('Added to Cart', `Added 1 packet of "${prod.name}" to POS cart.`, 'success', 1200);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-[#FBCFE8] border border-[#E5B6D3] text-[#31102A] font-extrabold text-[11px] hover:bg-[#f9a8d4] active:scale-95 transition cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-primary-soft border border-border text-ink font-extrabold text-[11px] hover:bg-primary-hover active:scale-95 transition cursor-pointer"
                   >
                     + Add POS
                   </button>
@@ -1032,11 +1038,11 @@ export default function ProductsPage() {
         </div>
       ) : (
         /* TABLE VIEW (Dense Operations Grid) */
-        <div className="bg-white rounded-3xl border border-[#FCE7F3] overflow-hidden shadow-xs">
+        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-[#FFF9FA] border-b border-[#FCE7F3] text-[#632055] font-extrabold uppercase text-[10px] tracking-wider">
+                <tr className="bg-surface border-b border-border text-ink-muted font-extrabold uppercase text-[10px] tracking-wider">
                   <th className="p-4">SKU Product</th>
                   <th className="p-4">Category / Shape</th>
                   <th className="p-4">Packet Weight</th>
@@ -1054,70 +1060,70 @@ export default function ProductsPage() {
                 {filteredProducts.map((prod) => {
                   const isLow = prod.currentStockUnits <= prod.reorderPointUnits;
                   return (
-                    <tr key={prod.id} className="hover:bg-[#FEFCE8]/40 transition">
+                    <tr key={prod.id} className="hover:bg-warning-soft/40 transition">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img
                             src={prod.image || '/assets/sadi mangodi.jpeg'}
                             alt={prod.name}
-                            className="w-10 h-10 object-contain rounded-xl border border-[#FCE7F3] bg-white p-0.5"
+                            className="w-10 h-10 object-contain rounded-xl border border-border bg-card p-0.5"
                           />
                           <div>
-                            <div className="font-extrabold text-[#31102A] text-sm">{prod.name}</div>
+                            <div className="font-extrabold text-ink text-sm">{prod.name}</div>
                             {prod.nameHindi && (
-                              <div className="text-[11px] text-gray-500">{prod.nameHindi}</div>
+                              <div className="text-[11px] text-ink-muted">{prod.nameHindi}</div>
                             )}
                           </div>
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className="font-bold text-[#632055]">{prod.category}</span>
-                        <div className="text-[10px] text-gray-500">Shape: {prod.shape}</div>
+                        <span className="font-bold text-ink-muted">{prod.category}</span>
+                        <div className="text-[10px] text-ink-muted">Shape: {prod.shape}</div>
                       </td>
-                      <td className="p-4 font-bold text-[#31102A]">
+                      <td className="p-4 font-bold text-ink">
                         {prod.packetSizeGrams >= 1000 ? `${prod.packetSizeGrams / 1000} kg` : `${prod.packetSizeGrams} g`}
                       </td>
-                      <td className="p-4 font-mono text-[11px] text-gray-600">
+                      <td className="p-4 font-mono text-[11px] text-ink-muted">
                         <div>{prod.barcode}</div>
-                        <div className="text-[10px] text-gray-400">HSN: {prod.hsnCode} (GST {prod.gstRate}%)</div>
+                        <div className="text-[10px] text-ink-muted">HSN: {prod.hsnCode} (GST {prod.gstRate}%)</div>
                       </td>
                       <td className="p-4 text-right">
                         <span
                           className={`font-black px-2 py-0.5 rounded-full text-xs ${
                             prod.currentStockUnits === 0
-                              ? 'bg-red-100 text-red-800'
+                              ? 'bg-danger-soft text-danger'
                               : isLow
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-emerald-50 text-emerald-800'
+                              ? 'bg-warning-soft text-warning'
+                              : 'bg-success-soft text-success'
                           }`}
                         >
                           {prod.currentStockUnits}
                         </span>
                       </td>
-                      <td className="p-4 text-right font-mono text-gray-500">₹{prod.mrpInr}</td>
-                      <td className="p-4 text-right font-black text-[#31102A] text-sm">₹{prod.retailPriceInr}</td>
-                      <td className="p-4 text-right font-extrabold text-[#632055]">₹{prod.wholesaleT1PriceInr}</td>
-                      <td className="p-4 text-right font-extrabold text-[#632055]">₹{prod.wholesaleT2PriceInr}</td>
-                      <td className="p-4 text-right font-mono text-gray-600">₹{prod.unitCostInr}</td>
+                      <td className="p-4 text-right font-mono text-ink-muted">₹{prod.mrpInr}</td>
+                      <td className="p-4 text-right font-black text-ink text-sm">₹{prod.retailPriceInr}</td>
+                      <td className="p-4 text-right font-extrabold text-ink-muted">₹{prod.wholesaleT1PriceInr}</td>
+                      <td className="p-4 text-right font-extrabold text-ink-muted">₹{prod.wholesaleT2PriceInr}</td>
+                      <td className="p-4 text-right font-mono text-ink-muted">₹{prod.unitCostInr}</td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleOpenEdit(prod)}
-                            className="p-1.5 rounded-lg border border-[#FCE7F3] hover:bg-[#FEFCE8] text-[#31102A] cursor-pointer"
+                            className="p-1.5 rounded-lg border border-border hover:bg-warning-soft text-ink cursor-pointer"
                             title="Edit"
                           >
                             <Edit size={14} />
                           </button>
                           <button
                             onClick={() => handleDuplicate(prod)}
-                            className="p-1.5 rounded-lg border border-[#FCE7F3] hover:bg-[#FEFCE8] text-[#632055] cursor-pointer"
+                            className="p-1.5 rounded-lg border border-border hover:bg-warning-soft text-ink-muted cursor-pointer"
                             title="Duplicate"
                           >
                             <Copy size={14} />
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(prod)}
-                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
+                            className="p-1.5 rounded-lg bg-danger-soft text-danger hover:bg-danger-soft cursor-pointer"
                             title="Delete"
                           >
                             <Trash2 size={14} />
@@ -1136,43 +1142,23 @@ export default function ProductsPage() {
       {/* ============================================================ */}
       {/* 🌟 MODAL: ADD / EDIT PRODUCT (Rich, Comprehensive Form) */}
       {/* ============================================================ */}
-      {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#31102A]/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
-          <div className="bg-white border-2 border-[#FCE7F3] rounded-3xl shadow-2xl w-full max-w-3xl my-8 overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Modal Header */}
-            <div className="p-5 sm:p-6 border-b border-[#FCE7F3] bg-gradient-to-r from-white via-[#FFF9FA] to-[#FEFCE8] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#9F1239] text-white flex items-center justify-center font-bold">
-                  {isEditing ? <Edit size={20} /> : <Plus size={20} />}
-                </div>
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-serif-brand font-black text-[#31102A]">
-                    {isEditing ? 'Edit Product SKU' : 'Add New Moong Mangodi Product'}
-                  </h2>
-                  <p className="text-xs text-[#632055] font-medium">
-                    Configure SKU identifiers, 4-tier pricing, inventory thresholds & images
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsFormModalOpen(false)}
-                className="w-10 h-10 rounded-2xl border border-[#FCE7F3] bg-white text-[#31102A] flex items-center justify-center hover:bg-[#FEFCE8] cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Modal Body / Scrollable Form */}
-            <form onSubmit={handleSubmitForm} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
+            <Modal
+        open={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        title={isEditing ? 'Edit Product' : 'Add New Product'}
+        id="product-form"
+        size="xl"
+      >
+        <form onSubmit={handleSubmitForm} className="space-y-6 flex-1 text-xs sm:text-sm p-1">
               {/* Section 1: Basic Information */}
               <div className="space-y-3">
-                <div className="text-xs font-black uppercase text-[#632055] tracking-wider flex items-center gap-2">
+                <div className="text-xs font-black uppercase text-ink-muted tracking-wider flex items-center gap-2">
                   <Package size={14} /> 1. Basic Product Info
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Product Name (English) *
                     </label>
                     <input
@@ -1181,12 +1167,12 @@ export default function ProductsPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g. Lambi Plain Moong Mangodi (500g)"
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm text-[#31102A] font-semibold focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                      className="jm-input"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Hindi Name (Optional)
                     </label>
                     <input
@@ -1194,18 +1180,18 @@ export default function ProductsPage() {
                       value={formData.nameHindi}
                       onChange={(e) => setFormData({ ...formData, nameHindi: e.target.value })}
                       placeholder="e.g. लंबी सादी मूंग मंगोड़ी"
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm text-[#31102A] font-semibold focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                      className="jm-input"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Category
                     </label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value as ProductSKU['category'] })}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm text-[#31102A] font-bold focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                      className="jm-input"
                     >
                       <option value="PLAIN_MANGODI">Sadi Plain Mangodi</option>
                       <option value="MASALA_MANGODI">Spiced Masala Mangodi</option>
@@ -1215,13 +1201,13 @@ export default function ProductsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Shape / Variety
                     </label>
                     <select
                       value={formData.shape}
                       onChange={(e) => setFormData({ ...formData, shape: e.target.value as ProductSKU['shape'] })}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm text-[#31102A] font-bold focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                      className="jm-input"
                     >
                       <option value="LAMBI">LAMBI (Finger shape)</option>
                       <option value="GOL">GOL (Round shape)</option>
@@ -1232,7 +1218,7 @@ export default function ProductsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Packet Size (Weight in Grams) *
                     </label>
                     <div className="flex items-center gap-2">
@@ -1245,7 +1231,7 @@ export default function ProductsPage() {
                           const g = Number(e.target.value);
                           setFormData({ ...formData, packetSizeGrams: g });
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm text-[#31102A] font-bold focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                        className="jm-input"
                       />
                     </div>
                     {/* Quick Gram Presets */}
@@ -1257,8 +1243,8 @@ export default function ProductsPage() {
                           onClick={() => handleAutoCalcWholesale(g)}
                           className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition cursor-pointer ${
                             formData.packetSizeGrams === g
-                              ? 'bg-[#31102A] text-white'
-                              : 'bg-white border border-[#FCE7F3] text-[#632055] hover:bg-[#FEFCE8]'
+                              ? 'bg-ink text-white'
+                              : 'bg-card border border-border text-ink-muted hover:bg-warning-soft'
                           }`}
                         >
                           {g >= 1000 ? `${g / 1000}kg` : `${g}g`}
@@ -1270,14 +1256,14 @@ export default function ProductsPage() {
               </div>
 
               {/* Section 2: Barcode & Tax Codes */}
-              <div className="space-y-3 pt-3 border-t border-gray-100">
-                <div className="text-xs font-black uppercase text-[#632055] tracking-wider flex items-center gap-2">
+              <div className="space-y-3 pt-3 border-t border-border">
+                <div className="text-xs font-black uppercase text-ink-muted tracking-wider flex items-center gap-2">
                   <BarChart3 size={14} /> 2. Barcode & GST Tax Classification
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Barcode (EAN-13 / SKU Code)
                     </label>
                     <div className="flex items-center gap-1.5">
@@ -1286,12 +1272,12 @@ export default function ProductsPage() {
                         value={formData.barcode}
                         onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                         placeholder="8906001230011"
-                        className="w-full px-3 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-xs font-mono font-bold text-[#31102A] focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                        className="jm-input"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, barcode: generateRandomBarcode() })}
-                        className="px-2.5 py-2.5 rounded-xl bg-[#FFF9FA] border border-[#FCE7F3] text-[#9F1239] font-bold text-xs hover:bg-[#FEFCE8] cursor-pointer"
+                        className="px-2.5 py-2.5 rounded-xl bg-surface border border-border text-primary font-bold text-xs hover:bg-warning-soft cursor-pointer"
                         title="Auto-generate Barcode"
                       >
                         <Sparkles size={14} />
@@ -1300,13 +1286,13 @@ export default function ProductsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       GST Tax Rate (%)
                     </label>
                     <select
                       value={formData.gstRate}
                       onChange={(e) => setFormData({ ...formData, gstRate: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-xs font-bold text-[#31102A] focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-xs font-bold text-ink focus:bg-card focus:outline-hidden focus:border-primary"
                     >
                       <option value={5}>5% (Standard Mangodi / Moong Bari)</option>
                       <option value={12}>12% (Prepared Spices / Mixtures)</option>
@@ -1315,7 +1301,7 @@ export default function ProductsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       HSN Code
                     </label>
                     <input
@@ -1323,22 +1309,22 @@ export default function ProductsPage() {
                       value={formData.hsnCode}
                       onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
                       placeholder="21069099"
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-xs font-mono font-bold text-[#31102A] focus:bg-white focus:outline-hidden focus:border-[#9F1239]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-xs font-mono font-bold text-ink focus:bg-card focus:outline-hidden focus:border-primary"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Section 3: 4-Tier Pricing Engine & Unit Cost */}
-              <div className="space-y-3 pt-3 border-t border-gray-100">
+              <div className="space-y-3 pt-3 border-t border-border">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-black uppercase text-[#632055] tracking-wider flex items-center gap-2">
+                  <div className="text-xs font-black uppercase text-ink-muted tracking-wider flex items-center gap-2">
                     <BadgeIndianRupee size={14} /> 3. 4-Tier Pricing Structure & Margins
                   </div>
                   <button
                     type="button"
                     onClick={() => handleAutoCalcWholesale(formData.packetSizeGrams)}
-                    className="text-[11px] font-bold text-[#9F1239] hover:underline cursor-pointer flex items-center gap-1"
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
                   >
                     <Sparkles size={12} /> Auto-suggest ₹175/kg rates
                   </button>
@@ -1346,7 +1332,7 @@ export default function ProductsPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   <div>
-                    <label className="block text-xs font-extrabold text-gray-500 mb-1">
+                    <label className="block text-xs font-extrabold text-ink-muted mb-1">
                       MRP (₹)
                     </label>
                     <input
@@ -1354,12 +1340,12 @@ export default function ProductsPage() {
                       step="0.5"
                       value={formData.mrpInr}
                       onChange={(e) => setFormData({ ...formData, mrpInr: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm font-bold text-gray-600 focus:bg-white"
+                      className="jm-input"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Retail Price (₹) *
                     </label>
                     <input
@@ -1368,12 +1354,12 @@ export default function ProductsPage() {
                       required
                       value={formData.retailPriceInr}
                       onChange={(e) => setFormData({ ...formData, retailPriceInr: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-2xl border border-[#9F1239] bg-white text-sm font-black text-[#9F1239] focus:outline-hidden"
+                      className="w-full px-3 py-2 rounded-xl border border-primary bg-card text-sm font-black text-primary focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#632055] mb-1">
+                    <label className="block text-xs font-extrabold text-ink-muted mb-1">
                       Wholesale T1 (₹)
                     </label>
                     <input
@@ -1381,13 +1367,13 @@ export default function ProductsPage() {
                       step="0.5"
                       value={formData.wholesaleT1PriceInr}
                       onChange={(e) => setFormData({ ...formData, wholesaleT1PriceInr: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-2xl border border-[#FCE7F3] bg-[#FEFCE8] text-sm font-black text-[#31102A] focus:bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-warning-soft text-sm font-black text-ink focus:bg-card"
                     />
-                    <span className="text-[9px] text-gray-400">₹175/kg bulk</span>
+                    <span className="text-[9px] text-ink-muted">₹175/kg bulk</span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#632055] mb-1">
+                    <label className="block text-xs font-extrabold text-ink-muted mb-1">
                       Wholesale T2 (₹)
                     </label>
                     <input
@@ -1395,13 +1381,13 @@ export default function ProductsPage() {
                       step="0.5"
                       value={formData.wholesaleT2PriceInr}
                       onChange={(e) => setFormData({ ...formData, wholesaleT2PriceInr: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-2xl border border-[#FCE7F3] bg-[#FEFCE8] text-sm font-black text-[#31102A] focus:bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-warning-soft text-sm font-black text-ink focus:bg-card"
                     />
-                    <span className="text-[9px] text-gray-400">₹165/kg dist.</span>
+                    <span className="text-[9px] text-ink-muted">₹165/kg dist.</span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-gray-600 mb-1">
+                    <label className="block text-xs font-extrabold text-ink-muted mb-1">
                       Unit Cost / COGS (₹)
                     </label>
                     <input
@@ -1409,33 +1395,33 @@ export default function ProductsPage() {
                       step="0.5"
                       value={formData.unitCostInr}
                       onChange={(e) => setFormData({ ...formData, unitCostInr: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm font-mono font-bold text-gray-700 focus:bg-white"
+                      className="jm-input"
                     />
-                    <span className="text-[9px] text-gray-400">Raw + Labor</span>
+                    <span className="text-[9px] text-ink-muted">Raw + Labor</span>
                   </div>
                 </div>
 
                 {/* Live Margin Calculation Card */}
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF9FA] to-[#FEFCE8] border border-[#FCE7F3] grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-gradient-to-r from-surface to-warning-soft border border-border grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div>
-                    <div className="text-gray-500 text-[10px] uppercase font-bold">Retail Profit</div>
-                    <div className="font-extrabold text-emerald-700 text-sm">
+                    <div className="text-ink-muted text-[10px] uppercase font-bold">Retail Profit</div>
+                    <div className="font-extrabold text-success text-sm">
                       ₹{modalRetailMarginInr} <span className="text-[11px]">({modalRetailMarginPct}%)</span>
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-[10px] uppercase font-bold">WS-1 Profit</div>
-                    <div className="font-extrabold text-emerald-700 text-sm">
+                    <div className="text-ink-muted text-[10px] uppercase font-bold">WS-1 Profit</div>
+                    <div className="font-extrabold text-success text-sm">
                       ₹{modalWs1MarginInr} <span className="text-[11px]">({modalWs1MarginPct}%)</span>
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-[10px] uppercase font-bold">Tax Base (Excl GST)</div>
-                    <div className="font-mono font-bold text-[#31102A] text-sm">₹{modalTax.taxableBaseInr}</div>
+                    <div className="text-ink-muted text-[10px] uppercase font-bold">Tax Base (Excl GST)</div>
+                    <div className="font-mono font-bold text-ink text-sm">₹{modalTax.taxableBaseInr}</div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-[10px] uppercase font-bold">CGST + SGST</div>
-                    <div className="font-mono font-bold text-[#9F1239] text-sm">
+                    <div className="text-ink-muted text-[10px] uppercase font-bold">CGST + SGST</div>
+                    <div className="font-mono font-bold text-primary text-sm">
                       ₹{modalTax.cgstInr} + ₹{modalTax.sgstInr}
                     </div>
                   </div>
@@ -1443,14 +1429,14 @@ export default function ProductsPage() {
               </div>
 
               {/* Section 4: Stock & Inventory Levels */}
-              <div className="space-y-3 pt-3 border-t border-gray-100">
-                <div className="text-xs font-black uppercase text-[#632055] tracking-wider flex items-center gap-2">
+              <div className="space-y-3 pt-3 border-t border-border">
+                <div className="text-xs font-black uppercase text-ink-muted tracking-wider flex items-center gap-2">
                   <Layers size={14} /> 4. Inventory & Reorder Rules
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Current Stock (Number of Packets)
                     </label>
                     <input
@@ -1458,12 +1444,12 @@ export default function ProductsPage() {
                       min="0"
                       value={formData.currentStockUnits}
                       onChange={(e) => setFormData({ ...formData, currentStockUnits: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm font-bold text-[#31102A] focus:bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-sm font-bold text-ink focus:bg-card"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#31102A] mb-1">
+                    <label className="block text-xs font-extrabold text-ink mb-1">
                       Minimum Reorder Point (ROP Alert Level)
                     </label>
                     <input
@@ -1471,25 +1457,25 @@ export default function ProductsPage() {
                       min="0"
                       value={formData.reorderPointUnits}
                       onChange={(e) => setFormData({ ...formData, reorderPointUnits: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-sm font-bold text-[#31102A] focus:bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-sm font-bold text-ink focus:bg-card"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Section 5: Product Image / Photo Selector */}
-              <div className="space-y-3 pt-3 border-t border-gray-100">
-                <div className="text-xs font-black uppercase text-[#632055] tracking-wider flex items-center gap-2">
+              <div className="space-y-3 pt-3 border-t border-border">
+                <div className="text-xs font-black uppercase text-ink-muted tracking-wider flex items-center gap-2">
                   <ImageIcon size={14} /> 5. Product Image & Photo
                 </div>
 
                 {/* Image Option Tabs */}
-                <div className="flex items-center gap-2 bg-[#FFF9FA] border border-[#FCE7F3] p-1 rounded-2xl w-fit">
+                <div className="flex items-center gap-2 bg-surface border border-border p-1 rounded-xl w-fit">
                   <button
                     type="button"
                     onClick={() => setImageTab('BUILTIN')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      imageTab === 'BUILTIN' ? 'bg-[#31102A] text-white shadow-xs' : 'text-[#632055]'
+                      imageTab === 'BUILTIN' ? 'bg-ink text-white shadow-xs' : 'text-ink-muted'
                     }`}
                   >
                     Preset Gallery
@@ -1498,7 +1484,7 @@ export default function ProductsPage() {
                     type="button"
                     onClick={() => setImageTab('UPLOAD')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      imageTab === 'UPLOAD' ? 'bg-[#31102A] text-white shadow-xs' : 'text-[#632055]'
+                      imageTab === 'UPLOAD' ? 'bg-ink text-white shadow-xs' : 'text-ink-muted'
                     }`}
                   >
                     Upload from Device
@@ -1507,7 +1493,7 @@ export default function ProductsPage() {
                     type="button"
                     onClick={() => setImageTab('URL')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      imageTab === 'URL' ? 'bg-[#31102A] text-white shadow-xs' : 'text-[#632055]'
+                      imageTab === 'URL' ? 'bg-ink text-white shadow-xs' : 'text-ink-muted'
                     }`}
                   >
                     Image URL
@@ -1520,23 +1506,23 @@ export default function ProductsPage() {
                       <div
                         key={img.url}
                         onClick={() => setFormData({ ...formData, image: img.url })}
-                        className={`p-2 rounded-2xl border-2 transition cursor-pointer flex flex-col items-center justify-between text-center ${
+                        className={`p-2 rounded-xl border-2 transition cursor-pointer flex flex-col items-center justify-between text-center ${
                           formData.image === img.url
-                            ? 'border-[#9F1239] bg-[#FFF9FA] shadow-xs'
-                            : 'border-[#FCE7F3] bg-white hover:bg-[#FEFCE8]'
+                            ? 'border-primary bg-surface shadow-xs'
+                            : 'border-border bg-card hover:bg-warning-soft'
                         }`}
                       >
                         <div className="h-16 w-full flex items-center justify-center overflow-hidden mb-1">
                           <img src={img.url} alt={img.label} className="max-h-full object-contain" />
                         </div>
-                        <span className="text-[10px] font-bold text-[#31102A] line-clamp-1">{img.label}</span>
+                        <span className="text-[10px] font-bold text-ink line-clamp-1">{img.label}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
                 {imageTab === 'UPLOAD' && (
-                  <div className="p-4 rounded-2xl border-2 border-dashed border-[#FBCFE8] bg-[#FFF9FA] text-center">
+                  <div className="p-4 rounded-xl border-2 border-dashed border-primary-soft bg-surface text-center">
                     <input
                       ref={imageFileInputRef}
                       type="file"
@@ -1545,13 +1531,13 @@ export default function ProductsPage() {
                       className="hidden"
                     />
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <ImageIcon size={32} className="text-[#9F1239]" />
-                      <div className="font-bold text-xs text-[#31102A]">Select photo from your phone or computer</div>
-                      <p className="text-[10px] text-gray-500">Supports JPG, PNG, WebP (Max 2MB)</p>
+                      <ImageIcon size={32} className="text-primary" />
+                      <div className="font-bold text-xs text-ink">Select photo from your phone or computer</div>
+                      <p className="text-[10px] text-ink-muted">Supports JPG, PNG, WebP (Max 2MB)</p>
                       <button
                         type="button"
                         onClick={() => imageFileInputRef.current?.click()}
-                        className="mt-1 px-4 py-2 rounded-xl bg-[#9F1239] text-white font-extrabold text-xs cursor-pointer hover:bg-[#881337]"
+                        className="mt-1 px-4 py-2 rounded-xl bg-primary text-white font-extrabold text-xs cursor-pointer hover:bg-primary-hover"
                       >
                         Browse Image File
                       </button>
@@ -1566,100 +1552,78 @@ export default function ProductsPage() {
                       value={formData.image}
                       onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                       placeholder="https://example.com/product-photo.png"
-                      className="w-full px-3.5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-[#FFF9FA] text-xs font-mono font-semibold text-[#31102A]"
+                      className="jm-input"
                     />
                   </div>
                 )}
 
                 {/* Selected Image Preview */}
                 {formData.image && (
-                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3]">
-                    <div className="w-14 h-14 rounded-xl bg-white border border-[#FCE7F3] flex items-center justify-center p-1 overflow-hidden shrink-0">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border">
+                    <div className="w-14 h-14 rounded-xl bg-card border border-border flex items-center justify-center p-1 overflow-hidden shrink-0">
                       <img src={formData.image} alt="Preview" className="max-h-full max-w-full object-contain" />
                     </div>
                     <div className="flex-1 truncate">
-                      <div className="text-xs font-bold text-[#31102A]">Selected Image Preview</div>
-                      <div className="text-[10px] text-gray-500 font-mono truncate">{formData.image.slice(0, 60)}...</div>
+                      <div className="text-xs font-bold text-ink">Selected Image Preview</div>
+                      <div className="text-[10px] text-ink-muted font-mono truncate">{formData.image.slice(0, 60)}...</div>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Modal Footer Actions */}
-              <div className="pt-4 border-t border-[#FCE7F3] flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsFormModalOpen(false)}
-                  className="px-5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-white text-[#632055] font-bold text-xs hover:bg-[#FEFCE8] cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-border bg-card text-ink-muted font-bold text-xs hover:bg-warning-soft cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-2xl bg-[#9F1239] text-white font-extrabold text-xs sm:text-sm shadow-md hover:bg-[#881337] active:scale-95 transition cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-primary text-white font-extrabold text-xs sm:text-sm shadow-md hover:bg-primary-hover active:scale-95 transition cursor-pointer"
                 >
                   {isEditing ? 'Save Changes' : 'Create & Add Product'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ============================================================ */}
       {/* 🌟 MODAL: BULK CSV UPLOAD */}
       {/* ============================================================ */}
-      {isCsvModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#31102A]/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
-          <div className="bg-white border-2 border-[#FCE7F3] rounded-3xl shadow-2xl w-full max-w-3xl my-8 overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Modal Header */}
-            <div className="p-5 sm:p-6 border-b border-[#FCE7F3] bg-gradient-to-r from-white via-[#FFF9FA] to-[#FEFCE8] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#31102A] text-white flex items-center justify-center font-bold">
-                  <FileSpreadsheet size={20} />
-                </div>
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-serif-brand font-black text-[#31102A]">
-                    Bulk CSV Product Importer
-                  </h2>
-                  <p className="text-xs text-[#632055] font-medium">
-                    Upload your product spreadsheet to add multiple SKUs simultaneously
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setIsCsvModalOpen(false);
-                  setCsvPreviewRows([]);
-                  setCsvErrors([]);
-                }}
-                className="w-10 h-10 rounded-2xl border border-[#FCE7F3] bg-white text-[#31102A] flex items-center justify-center hover:bg-[#FEFCE8] cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 text-xs sm:text-sm">
+            <Modal
+        open={isCsvModalOpen}
+        onClose={() => {
+          setIsCsvModalOpen(false);
+          setCsvPreviewRows([]);
+          setCsvErrors([]);
+        }}
+        title="Bulk CSV Upload"
+        id="csv-upload"
+        size="xl"
+      >
+        <div className="space-y-5 flex-1 text-xs sm:text-sm p-1">
               {/* Step 1: Template Download Banner */}
-              <div className="p-4 rounded-2xl bg-[#FFF9FA] border border-[#FCE7F3] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-xl bg-surface border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                  <div className="font-extrabold text-[#31102A] text-xs sm:text-sm">Need the CSV format spreadsheet?</div>
-                  <p className="text-[11px] text-[#632055] mt-0.5">
+                  <div className="font-extrabold text-ink text-xs sm:text-sm">Need the CSV format spreadsheet?</div>
+                  <p className="text-[11px] text-ink-muted mt-0.5">
                     Download our ready-made CSV template with all required columns (MRP, Retail, WS-1, Stock, HSN, etc.)
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleDownloadTemplate}
-                  className="px-3.5 py-2 rounded-xl bg-white border border-[#FCE7F3] text-[#9F1239] font-extrabold text-xs flex items-center gap-1.5 hover:bg-[#FEFCE8] cursor-pointer shrink-0"
+                  className="px-3.5 py-2 rounded-xl bg-card border border-border text-primary font-extrabold text-xs flex items-center gap-1.5 hover:bg-warning-soft cursor-pointer shrink-0"
                 >
                   <Download size={14} /> Download Template (.csv)
                 </button>
               </div>
 
               {/* Step 2: File Dropzone */}
-              <div className="p-6 rounded-3xl border-2 border-dashed border-[#FBCFE8] bg-[#FFF9FA] text-center">
+              <div className="p-6 rounded-xl border-2 border-dashed border-primary-soft bg-surface text-center">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1668,13 +1632,13 @@ export default function ProductsPage() {
                   className="hidden"
                 />
                 <div className="flex flex-col items-center justify-center gap-2">
-                  <Upload size={36} className="text-[#9F1239]" />
-                  <div className="font-extrabold text-sm text-[#31102A]">Choose your .CSV file to import</div>
-                  <p className="text-xs text-gray-500">Supports standard comma-delimited CSV exported from Excel or Google Sheets</p>
+                  <Upload size={36} className="text-primary" />
+                  <div className="font-extrabold text-sm text-ink">Choose your .CSV file to import</div>
+                  <p className="text-xs text-ink-muted">Supports standard comma-delimited CSV exported from Excel or Google Sheets</p>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="mt-2 px-5 py-2.5 rounded-2xl bg-[#9F1239] text-white font-extrabold text-xs cursor-pointer hover:bg-[#881337] shadow-sm"
+                    className="mt-2 px-5 py-2.5 rounded-xl bg-primary text-white font-extrabold text-xs cursor-pointer hover:bg-primary-hover shadow-sm"
                   >
                     Select CSV File
                   </button>
@@ -1683,12 +1647,12 @@ export default function ProductsPage() {
 
               {/* Errors & Validation */}
               {csvErrors.length > 0 && (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
-                  <div className="font-bold text-xs text-amber-900 flex items-center gap-1.5">
+                <div className="p-4 rounded-xl bg-warning-soft border border-warning/20 space-y-1">
+                  <div className="font-bold text-xs text-warning flex items-center gap-1.5">
                     <AlertTriangle size={15} /> CSV Validation Notes:
                   </div>
                   {csvErrors.map((err, idx) => (
-                    <p key={idx} className="text-[11px] text-amber-800">• {err}</p>
+                    <p key={idx} className="text-[11px] text-ink-muted">• {err}</p>
                   ))}
                 </div>
               )}
@@ -1697,17 +1661,17 @@ export default function ProductsPage() {
               {csvPreviewRows.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="font-extrabold text-xs text-[#31102A]">
-                      Parsed Preview: <span className="text-[#9F1239] font-black">{csvPreviewRows.length} Products Found</span>
+                    <div className="font-extrabold text-xs text-ink">
+                      Parsed Preview: <span className="text-primary font-black">{csvPreviewRows.length} Products Found</span>
                     </div>
-                    <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                    <span className="text-[11px] text-success font-bold flex items-center gap-1">
                       <CheckCircle2 size={13} /> Ready to import
                     </span>
                   </div>
 
-                  <div className="max-h-60 overflow-y-auto rounded-2xl border border-[#FCE7F3] bg-white">
+                  <div className="max-h-60 overflow-y-auto rounded-xl border border-border bg-card">
                     <table className="w-full text-left text-xs border-collapse">
-                      <thead className="sticky top-0 bg-[#FFF9FA] border-b border-[#FCE7F3] text-[10px] uppercase font-bold text-[#632055]">
+                      <thead className="sticky top-0 bg-surface border-b border-border text-[10px] uppercase font-bold text-ink-muted">
                         <tr>
                           <th className="p-2.5">Product Name</th>
                           <th className="p-2.5">Weight</th>
@@ -1719,13 +1683,13 @@ export default function ProductsPage() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {csvPreviewRows.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-pink-50/30">
-                            <td className="p-2.5 font-bold text-[#31102A]">{row.name}</td>
+                          <tr key={idx} className="hover:bg-surface">
+                            <td className="p-2.5 font-bold text-ink">{row.name}</td>
                             <td className="p-2.5">{row.packetSizeGrams}g</td>
-                            <td className="p-2.5 font-black text-[#9F1239]">₹{row.retailPriceInr}</td>
-                            <td className="p-2.5 font-extrabold text-[#632055]">₹{row.wholesaleT1PriceInr}</td>
+                            <td className="p-2.5 font-black text-primary">₹{row.retailPriceInr}</td>
+                            <td className="p-2.5 font-extrabold text-ink-muted">₹{row.wholesaleT1PriceInr}</td>
                             <td className="p-2.5 font-mono">{row.currentStockUnits}</td>
-                            <td className="p-2.5 font-mono text-gray-500">{row.barcode}</td>
+                            <td className="p-2.5 font-mono text-ink-muted">{row.barcode}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1736,7 +1700,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-5 sm:p-6 border-t border-[#FCE7F3] bg-[#FFF9FA] flex items-center justify-end gap-3">
+            <div className="p-5 sm:p-6 border-t border-border bg-surface flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -1744,7 +1708,7 @@ export default function ProductsPage() {
                   setCsvPreviewRows([]);
                   setCsvErrors([]);
                 }}
-                className="px-5 py-2.5 rounded-2xl border border-[#FCE7F3] bg-white text-[#632055] font-bold text-xs hover:bg-[#FEFCE8] cursor-pointer"
+                className="px-5 py-2.5 rounded-xl border border-border bg-card text-ink-muted font-bold text-xs hover:bg-warning-soft cursor-pointer"
               >
                 Cancel
               </button>
@@ -1752,14 +1716,12 @@ export default function ProductsPage() {
                 type="button"
                 disabled={csvPreviewRows.length === 0}
                 onClick={handleCommitCsvImport}
-                className="px-6 py-2.5 rounded-2xl bg-[#9F1239] text-white font-extrabold text-xs sm:text-sm shadow-md hover:bg-[#881337] active:scale-95 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 rounded-xl bg-primary text-white font-extrabold text-xs sm:text-sm shadow-md hover:bg-primary-hover active:scale-95 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Import {csvPreviewRows.length} Products
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }
